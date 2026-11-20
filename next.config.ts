@@ -1,9 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
+  // O site institucional é a página estática public/site.html, servida na raiz.
+  async rewrites() {
+    return [{ source: "/", destination: "/site.html" }];
+  },
 };
 
 export default nextConfig;

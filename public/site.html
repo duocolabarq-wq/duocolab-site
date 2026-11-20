@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duo Colab Arquitetura</title>
+<meta name="description" content="Escritório de arquitetura e interiores em Recife. Do turbilhão ao ufa: a gente pega na sua mão do primeiro rabisco até o dia da mudança.">
+<link rel="icon" href="/img/logo_verde.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* Identidade Duo: creme quente, serifa editorial nos títulos, Sora (fonte da marca) em rótulos espaçados,
+   verde-oliva do logo e terra da madeira como acentos. */
+:root{
+  --creme:#f2eee8; --creme2:#ebe6de; --creme3:#e2dbcf; --tinta:#1f1c18; --suave:#6f6a62; --linha:rgba(31,28,24,.16);
+  --verde:#3f4a37; --salvia:#8f9a78; --salviaL:#e3e7d8; --terra:#8a5529; --rosa:#b86a5e; --rosaL:#f3e1dc;
+  --serif:"Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --sans:"Sora", "Helvetica Neue", Arial, sans-serif;
+  --m:clamp(22px,4.5vw,64px);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{margin:0;background:var(--creme);color:var(--tinta);font-family:var(--sans);font-weight:300;font-size:15.5px;line-height:1.75;-webkit-font-smoothing:antialiased}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit}
+a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:1px solid currentColor;outline-offset:4px}
+h1,h2,h3,h4{font-family:var(--serif);font-weight:400;margin:0;line-height:1.02;letter-spacing:-.015em;text-wrap:balance}
+p{margin:0;max-width:56ch}
+.rot{font-family:var(--sans);font-size:11px;font-weight:400;letter-spacing:.26em;text-transform:uppercase}
+.link{display:inline-flex;align-items:center;gap:14px;padding-bottom:6px;border-bottom:1px solid currentColor;background:none;border-top:0;border-left:0;border-right:0;cursor:pointer}
+.link .seta{transition:transform .25s}
+.link:hover .seta{transform:translateX(4px)}
+section{scroll-margin-top:70px}
+.olho{display:block;color:var(--suave);margin-bottom:18px}
+
+/* ---------- Topo fixo ---------- */
+.topo{position:fixed;z-index:20;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:22px var(--m);color:#fff;transition:background .35s,color .35s,padding .35s}
+.topo.solido{background:rgba(242,238,232,.95);backdrop-filter:blur(8px);color:var(--tinta);padding-top:14px;padding-bottom:14px;border-bottom:1px solid var(--linha)}
+.marca{font-size:13px;font-weight:300;letter-spacing:.34em}
+.topo nav{display:flex;align-items:center;gap:34px}
+.topo nav ul{display:flex;gap:30px;list-style:none;margin:0;padding:0}
+.topo nav ul a{opacity:.88}.topo nav ul a:hover{opacity:1}
+.btn-cliente{border:1px solid currentColor;background:none;padding:9px 16px;cursor:pointer;display:inline-flex;align-items:center;gap:10px}
+.btn-cliente:hover{background:currentColor}
+.btn-cliente:hover span{color:var(--creme);filter:invert(0)}
+.topo:not(.solido) .btn-cliente:hover span{color:var(--tinta)}
+.menu-btn{display:none;background:none;border:0;cursor:pointer;padding:6px}
+@media (max-width:980px){
+  .topo nav ul{display:none}
+  .topo nav ul.aberto{display:flex;position:fixed;inset:64px 0 auto 0;flex-direction:column;gap:0;background:var(--creme);color:var(--tinta);padding:10px var(--m) 24px;border-bottom:1px solid var(--linha)}
+  .topo nav ul.aberto li a{display:block;padding:14px 0;border-bottom:1px solid var(--linha)}
+  .menu-btn{display:block}
+}
+
+/* ---------- Hero ---------- */
+.hero{position:relative;min-height:100svh;color:#fff;overflow:hidden;background:#3a2c22;display:flex;align-items:flex-end}
+.hero > img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.04);animation:respira 18s ease-in-out infinite alternate}
+@keyframes respira{to{transform:scale(1.0)}}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,rgba(20,15,10,.66) 0%,rgba(20,15,10,.28) 50%,rgba(20,15,10,.05) 78%),linear-gradient(0deg,rgba(20,15,10,.45),transparent 40%)}
+.hero .conteudo{position:relative;z-index:2;padding:160px var(--m) clamp(60px,10vh,110px);display:flex;flex-direction:column;gap:28px;width:100%}
+.hero h1{font-size:clamp(60px,9.5vw,148px);max-width:9ch}
+.hero .sub{line-height:2.1}
+.hero .acoes{display:flex;gap:34px;flex-wrap:wrap;align-items:center}
+.hero .legenda{position:absolute;z-index:2;right:var(--m);bottom:30px;text-align:right;opacity:.85}
+.hero{background:#2e2a22}
+.hero > img{object-position:50% 40%}
+.hero h1{font-size:clamp(48px,6.6vw,108px);max-width:11ch}
+@media (min-width:900px){
+  .hero > img{left:42%;width:58%;animation:none;transform:none}
+  .hero::after{background:linear-gradient(90deg,#2e2a22 0%,#2e2a22 40%,rgba(46,42,34,.55) 48%,rgba(46,42,34,0) 62%),linear-gradient(0deg,rgba(20,15,10,.35),transparent 30%),linear-gradient(180deg,rgba(20,15,10,.55),transparent 16%)}
+  .hero .conteudo{max-width:52%}
+}
+@media (max-width:899px){.hero > img{height:62%;object-position:50% 30%}.hero{background:#2e2a22}.hero::after{background:linear-gradient(0deg,#2e2a22 0%,#2e2a22 40%,rgba(46,42,34,0) 58%),linear-gradient(180deg,rgba(20,15,10,.6),transparent 14%)!important;}.hero .x{background:linear-gradient(0deg,rgba(20,15,10,.82) 0%,rgba(20,15,10,.35) 45%,rgba(20,15,10,.15) 100%)}.hero .legenda{display:none}}
+
+@media (max-width:700px){.hero .legenda{display:none}}
+
+/* ---------- Manifesto ---------- */
+.manifesto{padding:clamp(90px,14vw,150px) var(--m);text-align:center;display:flex;flex-direction:column;align-items:center;gap:28px}
+.manifesto h2{font-size:clamp(44px,6.4vw,96px);max-width:14ch}
+.manifesto p{color:#4a453e;max-width:60ch}
+.quadro{width:100%;max-width:1400px;display:grid;grid-template-columns:repeat(12,1fr);grid-auto-rows:clamp(90px,10vw,150px);gap:10px;margin-top:30px;text-align:left}
+.quadro figure{margin:0;overflow:hidden;background:var(--creme2);cursor:zoom-in}
+.quadro img{width:100%;height:100%;object-fit:cover;display:block;transition:transform 1s cubic-bezier(.2,.7,.2,1)}
+.quadro figure:hover img{transform:scale(1.04)}
+.qa{grid-column:1/6;grid-row:span 3}.qb{grid-column:6/9;grid-row:span 2}.qc{grid-column:9/13;grid-row:span 2}
+.qd{grid-column:6/9;grid-row:span 3}.qe{grid-column:9/13;grid-row:span 2}.qf{grid-column:1/6;grid-row:span 2}
+.qg{grid-column:9/13;grid-row:span 3}.qh{grid-column:1/4;grid-row:span 2}.qi{grid-column:4/9;grid-row:span 2}.qj{grid-column:1/9;grid-row:span 2}.qk{grid-column:9/13;grid-row:span 2}
+@media (max-width:760px){.quadro{grid-template-columns:1fr 1fr;grid-auto-rows:120px}.quadro figure{grid-column:auto!important;grid-row:span 2!important}.quadro .qa,.quadro .qj,.quadro .qk{grid-column:1/3!important}}
+.ufa{margin-top:40px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.ufa h3{font-size:clamp(32px,4vw,58px);max-width:16ch}
+.ufa p{color:#4a453e;max-width:52ch}
+
+
+/* ---------- Portfólio: Apê de Bento ---------- */
+.portfolio{padding:0 var(--m) 120px}
+.port-cab{display:grid;grid-template-columns:1.1fr 1fr;gap:50px;align-items:end;padding:60px 0 44px;border-top:1px solid var(--linha)}
+.port-cab h2{font-size:clamp(54px,7vw,112px)}
+.port-cab .contexto{font-family:var(--serif);font-size:clamp(24px,2.4vw,32px);line-height:1.2;color:#4a453e;margin-top:18px}
+.port-cab dl{display:grid;grid-template-columns:auto 1fr;margin:22px 0 0;border-top:1px solid var(--linha)}
+.port-cab dt,.port-cab dd{margin:0;padding:9px 0;border-bottom:1px solid var(--linha)}
+.port-cab dt{color:var(--suave);padding-right:30px}
+.port-cab .texto p+p{margin-top:14px}
+.port-cab .texto p{color:#4a453e}
+@media (max-width:900px){.port-cab{grid-template-columns:1fr;gap:26px}}
+.destaque{position:relative;overflow:hidden;cursor:zoom-in;background:var(--creme2)}
+.destaque img{width:100%;aspect-ratio:16/8.2;object-fit:cover;transition:transform 1.2s cubic-bezier(.2,.7,.2,1)}
+.destaque:hover img{transform:scale(1.02)}
+.selo{position:absolute;top:16px;left:16px;background:var(--creme);color:var(--tinta);padding:6px 11px}
+.abas-amb{display:flex;gap:30px;overflow-x:auto;padding:26px 0 22px;scrollbar-width:none;position:sticky;top:57px;z-index:5;background:var(--creme)}
+.abas-amb button{flex:none;background:none;border:0;padding:0 0 6px;cursor:pointer;color:var(--suave);border-bottom:1px solid transparent}
+.abas-amb button:hover{color:var(--tinta)}
+.abas-amb button[aria-pressed="true"]{color:var(--tinta);border-bottom-color:var(--tinta)}
+.amb-texto{display:grid;grid-template-columns:1fr 1.3fr;gap:30px;align-items:end;margin:6px 0 24px}
+.amb-texto h3{font-size:clamp(34px,3.6vw,54px)}
+.amb-texto p{color:#4a453e;font-size:14.5px}
+@media (max-width:760px){.amb-texto{grid-template-columns:1fr;gap:10px}}
+.mosaico{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.mosaico figure{margin:0;overflow:hidden;background:var(--creme2);cursor:zoom-in;grid-column:span 3}
+.mosaico figure.larga{grid-column:span 6}
+.mosaico figure.terco{grid-column:span 2}
+.mosaico img{width:100%;height:100%;object-fit:cover;aspect-ratio:16/9;transition:transform .9s cubic-bezier(.2,.7,.2,1)}
+.mosaico figure.larga img{aspect-ratio:16/7.4}
+.mosaico figure:hover img{transform:scale(1.03)}
+.mosaico.entra figure{animation:surge .7s both}
+@keyframes surge{from{opacity:0;transform:translateY(14px)}}
+@media (max-width:700px){.mosaico figure,.mosaico figure.terco{grid-column:span 6}}
+.nota{color:var(--suave);margin-top:22px}
+
+/* ---------- Mais projetos ---------- */
+.projetos{padding:0 var(--m) 120px}
+.projetos .cab{padding:70px 0 10px;border-top:1px solid var(--linha);display:grid;grid-template-columns:1.1fr 1fr;gap:50px;align-items:end}
+.projetos .cab h2{font-size:clamp(44px,5.4vw,84px)}
+.projetos .cab p{color:#4a453e}
+@media (max-width:900px){.projetos .cab{grid-template-columns:1fr;gap:18px}}
+.tem-sub{position:relative}
+.topo nav ul.sub{display:none;position:absolute;top:100%;left:-16px;flex-direction:column;gap:0;padding:12px 0 8px;min-width:190px}
+.topo nav ul.sub::before{content:"";position:absolute;inset:8px 0 0;background:var(--creme);border:1px solid var(--linha);z-index:-1}
+.topo nav ul.sub a{display:block;padding:7px 16px;color:var(--tinta)}
+.tem-sub:hover>ul.sub,.tem-sub:focus-within>ul.sub{display:flex}
+@media (max-width:980px){.topo nav ul.aberto ul.sub{display:flex;position:static;padding:0 0 6px 18px;min-width:0}.topo nav ul.aberto ul.sub::before{display:none}.topo nav ul.aberto ul.sub a{padding:9px 0;border-bottom:0;color:var(--suave)}}
+.filtros{margin:34px 0 0;position:sticky;top:57px;z-index:5;background:var(--creme);padding:12px 0 4px}
+.f1,.f2{display:flex;flex-wrap:wrap;gap:8px}
+.f2{margin-top:10px}.f2:empty{display:none}
+.filtros button{border:1px solid var(--linha);background:none;padding:8px 14px;cursor:pointer;color:var(--suave);font:inherit;letter-spacing:inherit;text-transform:inherit}
+.filtros button:hover{color:var(--tinta);border-color:var(--tinta)}
+.filtros button[aria-pressed="true"]{background:var(--tinta);border-color:var(--tinta);color:var(--creme)}
+.f2 button{padding:6px 12px;font-size:10.5px}
+.filtros button:disabled{opacity:.45;cursor:default;border-style:dashed}
+.filtros button sup{font-size:9px;margin-left:4px;opacity:.7}
+.capa .cat{display:block;color:var(--suave);font-size:10px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:3px}
+.capas:empty::after{content:"Nenhum projeto publicado nesta categoria ainda.";color:var(--suave)}
+.proj-sub{font-family:var(--serif);font-style:italic;font-size:clamp(20px,2vw,26px);color:#4a453e;margin-top:10px;line-height:1.2}
+.capas{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:22px 0 10px}
+@media (max-width:700px){.capas{grid-template-columns:1fr 1fr;gap:10px}.capa b{font-size:18px}}
+.capa{position:relative;border:0;padding:0;background:var(--creme2);cursor:pointer;text-align:left;font:inherit;color:inherit;overflow:hidden}
+.capa img{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;transition:transform .9s cubic-bezier(.2,.7,.2,1),filter .4s;filter:saturate(.85)}
+.capa:hover img{transform:scale(1.04);filter:none}
+.capa span{display:block;padding:10px 12px 12px;background:var(--creme)}
+.capa b{display:block;font-family:var(--serif);font-weight:400;font-size:21px;line-height:1.1}
+.capa small{color:var(--suave);font-size:11px;letter-spacing:.2em;text-transform:uppercase}
+.capa[aria-pressed="true"]{outline:1px solid var(--tinta);outline-offset:3px}
+.capa[aria-pressed="true"] img{filter:none}
+.capa .selo{top:10px;left:10px;font-size:10px;padding:4px 8px}
+.proj-info{display:grid;grid-template-columns:1fr 1.2fr;gap:40px;align-items:end;margin:40px 0 24px;scroll-margin-top:90px}
+.proj-info h3{font-size:clamp(36px,4vw,60px)}
+.proj-info p{color:#4a453e;font-size:14.5px}
+.proj-info dl{display:grid;grid-template-columns:auto 1fr;margin:16px 0 0;border-top:1px solid var(--linha)}
+.proj-info dt,.proj-info dd{margin:0;padding:8px 0;border-bottom:1px solid var(--linha)}
+.proj-info dt{color:var(--suave);padding-right:26px}
+@media (max-width:760px){.proj-info{grid-template-columns:1fr;gap:12px}}
+.mosaico.proj img{aspect-ratio:4/3.4}
+.mosaico.proj figure.larga img{aspect-ratio:16/8}
+.ad{margin-top:44px}
+.ad h4{font-size:30px;margin-bottom:6px}
+.ad-comp{position:relative;max-width:980px;aspect-ratio:4/3;overflow:hidden;background:var(--creme2);user-select:none;touch-action:none;cursor:ew-resize}
+.ad-comp img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ad-comp .antes{clip-path:inset(0 calc(100% - var(--p,50%)) 0 0)}
+.ad-comp .linha{position:absolute;top:0;bottom:0;left:var(--p,50%);width:2px;background:var(--creme);transform:translateX(-1px)}
+.ad-comp .linha::after{content:"⟷";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--creme);color:var(--tinta);width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:18px}
+.ad-comp .et{position:absolute;bottom:14px;background:var(--creme);padding:5px 10px}
+.ad-comp .et.a{left:14px}.ad-comp .et.d{right:14px}
+.ad-par{display:grid;grid-template-columns:1fr 1.3fr 1.3fr;gap:12px;align-items:end;margin-top:18px;padding-top:18px;border-top:1px solid var(--linha)}
+.ad-par figure{position:relative;margin:0;overflow:hidden;cursor:zoom-in;background:var(--creme2)}
+.ad-par img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block}
+.ad-par .et{position:absolute;bottom:12px;left:12px;background:var(--creme);padding:5px 10px}
+@media (max-width:760px){.ad-par{grid-template-columns:1fr 1fr}.ad-par .ad-txt{grid-column:span 2}}
+.av.foto{object-fit:cover;object-position:50% 20%;padding:0}
+.foto-equipe.real img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 35%}
+
+.mostras{padding:0 var(--m) 120px}
+.mostras .cab{padding:70px 0 10px;border-top:1px solid var(--linha);display:grid;grid-template-columns:1.1fr 1fr;gap:50px;align-items:end}
+.mostras .cab h2{font-size:clamp(44px,5.4vw,84px)}.mostras .cab p{color:#4a453e}
+@media (max-width:900px){.mostras .cab{grid-template-columns:1fr;gap:18px}}
+.edicoes{list-style:none;padding:0;margin:30px 0 26px;display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--linha)}
+.edicoes li{padding:14px 16px 14px 0;border-bottom:1px solid var(--linha);display:flex;flex-direction:column;gap:4px;color:var(--suave)}
+.edicoes b{font-weight:400;color:var(--tinta)}
+.edicoes li[aria-current]{border-bottom:2px solid var(--tinta)}
+.edicoes li.premio span{color:var(--terra)}
+.edicoes li.premio span::before{content:"★ "}
+@media (max-width:700px){.edicoes{grid-template-columns:1fr}}
+.mostra-mos img{aspect-ratio:4/4.6}.mostra-mos figure.larga img{aspect-ratio:16/8;object-position:50% 45%}.mostra-mos figure.terco img{aspect-ratio:4/5}
+/* ---------- Processo ---------- */
+.processo{padding:110px var(--m);background:var(--creme2)}
+.processo h2,.servicos h2,.equipe h2{font-size:clamp(40px,4.6vw,68px);margin-bottom:46px}
+.etapas{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);column-gap:56px}
+.etapas li{border-top:1px solid var(--linha);padding:26px 0 44px;display:flex;flex-direction:column;gap:12px}
+.etapas .n{font-family:var(--serif);font-size:20px;color:var(--suave)}
+.etapas h3{font-size:30px}
+.etapas p{font-size:14.5px;color:#4a453e}
+@media (max-width:900px){.etapas{grid-template-columns:1fr 1fr}}
+@media (max-width:600px){.etapas{grid-template-columns:1fr}}
+
+/* ---------- Serviços ---------- */
+.servicos{padding:110px var(--m);background:var(--tinta);color:var(--creme)}
+.servicos .olho{color:rgba(242,238,232,.6)}
+.serv-lista{list-style:none;margin:0;padding:0}
+.serv-lista > li{border-top:1px solid rgba(242,238,232,.18)}
+.serv-lista > li:last-child{border-bottom:1px solid rgba(242,238,232,.18)}
+.serv-lista button{width:100%;display:grid;grid-template-columns:70px 1fr 1.25fr 30px;gap:20px;align-items:baseline;padding:26px 0;background:none;border:0;text-align:left;cursor:pointer;color:var(--creme)}
+.serv-lista .n{font-family:var(--serif);font-size:20px;opacity:.55}
+.serv-lista h3{font-size:clamp(30px,3vw,42px)}
+.serv-lista .resumo{opacity:.78;font-size:14.5px}
+.serv-lista .mais{font-family:var(--serif);font-size:28px;opacity:.7;transition:transform .3s;justify-self:end}
+.serv-lista li.aberto .mais{transform:rotate(45deg)}
+.serv-det{display:grid;grid-template-rows:0fr;transition:grid-template-rows .45s ease}
+.serv-lista li.aberto .serv-det{grid-template-rows:1fr}
+.serv-det > div{overflow:hidden}
+.serv-det ul{list-style:none;margin:0;padding:0 0 30px calc(70px + 20px);display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px 30px}
+.serv-det li{font-size:14px;opacity:.85;padding-left:16px;position:relative}
+.serv-det li::before{content:"";position:absolute;left:0;top:.8em;width:7px;height:1px;background:currentColor}
+@media (max-width:760px){.serv-lista button{grid-template-columns:40px 1fr 24px}.serv-lista .resumo{grid-column:2}.serv-lista .mais{grid-row:1;grid-column:3}.serv-det ul{padding-left:60px}}
+.pacotes{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(242,238,232,.18);margin-top:56px;border:1px solid rgba(242,238,232,.18)}
+.pacote{background:var(--tinta);padding:26px 24px;display:flex;flex-direction:column;gap:10px}
+.pacote h4{font-size:28px}
+.pacote p{font-size:14px;opacity:.78}
+.pacote .rot{opacity:.6}
+@media (max-width:820px){.pacotes{grid-template-columns:1fr}}
+
+/* ---------- Sobre / Equipe ---------- */
+.equipe{padding:120px var(--m)}
+.sobre-grid{display:grid;grid-template-columns:1fr 1.15fr;gap:clamp(30px,5vw,80px);align-items:center}
+.sobre-grid h2{margin-bottom:28px}
+.sobre-grid .texto p{color:#4a453e}
+.sobre-grid .texto p+p{margin-top:16px}
+@media (max-width:900px){.sobre-grid{grid-template-columns:1fr}}
+.foto-equipe{position:relative;aspect-ratio:4/3.1;margin:0;background:var(--creme3);overflow:hidden;display:flex;align-items:flex-end}
+.foto-equipe svg{position:absolute;inset:0;width:100%;height:100%;opacity:.5}
+.foto-equipe figcaption{position:relative;margin:22px;background:var(--creme);padding:14px 18px;display:flex;flex-direction:column;gap:2px;max-width:330px}
+.foto-equipe figcaption b{font-family:var(--serif);font-weight:400;font-size:24px;line-height:1.1}
+.foto-equipe figcaption span{font-size:13px;color:var(--suave)}
+.pessoas{display:grid;grid-template-columns:repeat(3,1fr);gap:0 40px;margin-top:70px;list-style:none;padding:0}
+.pessoas li{border-top:1px solid var(--linha);padding:20px 0 26px;display:flex;gap:16px;align-items:flex-start}
+.pessoas .av{flex:none;width:46px;height:46px;border-radius:50%;background:var(--verde);color:var(--creme);display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:22px}
+.pessoas b{display:block;font-family:var(--serif);font-weight:400;font-size:24px;line-height:1.15}
+.pessoas span{font-size:13.5px;color:var(--suave)}
+@media (max-width:900px){.pessoas{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.pessoas{grid-template-columns:1fr}}
+.cobogo-faixa{display:grid;grid-template-columns:auto 1fr;gap:30px;align-items:center;margin-top:60px;padding:30px;background:var(--creme2)}
+.cobogo-faixa img{width:96px;height:auto;display:block}
+.cobogo-faixa p{color:#4a453e;font-size:14.5px;max-width:70ch}
+
+/* ---------- Proposta (captação) ---------- */
+.proposta{padding:120px var(--m);background:var(--verde);color:var(--creme)}
+.prop-grid{display:grid;grid-template-columns:1fr 1.25fr;gap:clamp(30px,6vw,90px);align-items:start}
+@media (max-width:900px){.prop-grid{grid-template-columns:1fr}}
+.proposta h2{font-size:clamp(48px,6vw,96px);max-width:10ch}
+.proposta .intro p{opacity:.85;margin-top:24px}
+.proposta .olho{color:rgba(242,238,232,.65)}
+.proposta .dados{margin-top:40px;display:grid;gap:18px}
+.proposta .dados div{display:flex;flex-direction:column;gap:2px}
+.proposta .dados .rot{opacity:.6}
+.proposta .dados span:not(.rot),.proposta .dados a{font-family:var(--serif);font-size:22px;line-height:1.3}
+.form{background:var(--creme);color:var(--tinta);padding:clamp(24px,3.4vw,44px)}
+.passos{display:flex;gap:6px;margin-bottom:28px}
+.passos i{flex:1;height:3px;background:var(--creme3);transition:background .3s}
+.passos i.on{background:var(--verde)}
+.passo{display:none;flex-direction:column;gap:22px}
+.passo.on{display:flex;animation:surge .5s both}
+.passo h3{font-size:clamp(28px,2.6vw,38px)}
+.opcoes{display:flex;flex-wrap:wrap;gap:8px}
+.opcoes button{background:none;border:1px solid var(--linha);padding:9px 15px;cursor:pointer;font-size:13.5px;transition:all .2s}
+.opcoes button:hover{border-color:var(--tinta)}
+.opcoes button[aria-pressed="true"]{background:var(--tinta);color:var(--creme);border-color:var(--tinta)}
+.campo{display:flex;flex-direction:column;gap:6px}
+.campo label{color:var(--suave)}
+.campo input,.campo textarea,.campo select{font:inherit;font-size:15px;background:transparent;border:0;border-bottom:1px solid var(--linha);padding:8px 0;color:var(--tinta);border-radius:0}
+.campo textarea{resize:vertical;min-height:80px}
+.campo input:focus,.campo textarea:focus,.campo select:focus{outline:none;border-bottom-color:var(--tinta)}
+.duas{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+@media (max-width:600px){.duas{grid-template-columns:1fr}}
+.nav-form{display:flex;justify-content:space-between;align-items:center;margin-top:30px;gap:16px}
+.btn{display:inline-flex;align-items:center;gap:12px;background:var(--tinta);color:var(--creme);border:0;padding:13px 22px;cursor:pointer}
+.btn:hover{background:#000}
+.btn.claro{background:none;color:var(--tinta);padding-left:0;padding-right:0;border-bottom:1px solid currentColor}
+.btn.verde{background:var(--verde)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.erro{color:var(--rosa);font-size:13px;min-height:1em}
+.resumo-env{background:var(--creme2);padding:18px 20px;font-size:14px;white-space:pre-wrap;line-height:1.6;max-height:260px;overflow:auto}
+
+footer.rodape{padding:70px var(--m) 26px;background:var(--verde);color:var(--creme);border-top:0;display:block}
+.rod-grid{display:grid;grid-template-columns:1fr 1.2fr 1.4fr;gap:44px;align-items:start}
+.rod-marca img{width:74px;background:var(--creme);padding:6px;border-radius:4px}
+.rod-nome{font-family:var(--serif);font-size:30px;line-height:1.05;margin:16px 0 10px}
+.rod-frase{font-family:var(--serif);font-style:italic;font-size:18px;opacity:.8;margin:0}
+.rod-contatos{display:flex;flex-direction:column;gap:16px}
+.rod-contatos .rot{opacity:.7}
+.rod-link{display:flex;gap:14px;align-items:flex-start;color:inherit;text-decoration:none;line-height:1.45}
+.rod-link svg{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;margin-top:2px}
+.rod-link b{display:block;font-weight:400;font-size:11px;letter-spacing:.24em;text-transform:uppercase;opacity:.7}
+.rod-link span{font-size:15px}
+.rod-link:hover span{text-decoration:underline;text-underline-offset:4px}
+.mapa-box{position:relative;height:220px;border-radius:10px;overflow:hidden;background:rgba(242,238,232,.1)}
+.mapa-box iframe{position:absolute;inset:0;width:100%;height:100%;border:0;filter:saturate(.75)}
+.mapa-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;font-family:var(--serif);font-size:22px;background:repeating-linear-gradient(135deg,rgba(242,238,232,.06) 0 14px,transparent 14px 28px)}
+.mapa-ph svg{width:34px;height:34px;fill:none;stroke:var(--creme);stroke-width:1.5}
+.rod-mapa .link{display:inline-block;margin-top:12px;color:var(--creme)}
+.rod-base{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:50px;padding-top:20px;border-top:1px solid rgba(242,238,232,.22);opacity:.85}
+.rod-base .link{color:var(--creme)}
+@media (max-width:900px){.rod-grid{grid-template-columns:1fr;gap:34px}}
+.zap-flutua{position:fixed;right:20px;bottom:20px;z-index:30;width:54px;height:54px;border-radius:50%;background:#25d366;color:#fff;display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.18);transition:transform .2s}
+.zap-flutua:hover{transform:scale(1.07)}
+.zap-flutua svg{width:28px;height:28px}
+dialog[open] ~ .zap-flutua{display:none}
+
+footer.rodape img{width:54px}
+
+/* ---------- Lightbox ---------- */
+#zoom{border:0;padding:0;background:transparent;width:100vw;height:100svh;max-width:none;max-height:none}
+#zoom::backdrop{background:rgba(14,12,10,.95)}
+#zoom .z{position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+#zoom img{max-width:94vw;max-height:84svh;object-fit:contain}
+#zoom .zl{position:absolute;bottom:24px;left:0;right:0;text-align:center;color:#ddd}
+#zoom .zb{position:absolute;top:50%;transform:translateY(-50%);background:none;border:1px solid rgba(255,255,255,.4);color:#fff;width:46px;height:46px;border-radius:50%;cursor:pointer;font-size:18px}
+#zoom .zb.ant{left:22px}#zoom .zb.prox{right:22px}
+#zoom .zf{position:absolute;top:20px;right:24px;background:none;border:0;color:#fff;cursor:pointer}
+
+/* =========================================================
+   ÁREA DO CLIENTE
+   ========================================================= */
+#cliente{border:0;padding:0;margin:0;width:100vw;height:100svh;max-width:none;max-height:none;background:var(--creme);color:var(--tinta)}
+#cliente::backdrop{background:rgba(20,15,10,.6)}
+.ac{height:100%;overflow-y:auto}
+.ac-barra{position:sticky;top:0;z-index:4;display:flex;justify-content:space-between;align-items:center;padding:16px var(--m);background:rgba(242,238,232,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--linha)}
+.ac-barra .esq{display:flex;align-items:center;gap:16px}
+.ac-barra img{width:40px}
+.ac-barra .dir{display:flex;gap:22px;align-items:center}
+.ac-barra button{background:none;border:0;cursor:pointer;padding:0}
+.ac-wrap{max-width:1080px;margin:0 auto;padding:34px clamp(18px,3vw,34px) 70px}
+
+/* login */
+.login{min-height:calc(100svh - 74px);display:grid;grid-template-columns:1fr 1fr}
+.login .lado-img{position:relative;overflow:hidden}
+.login .lado-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.login .lado-img::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(20,15,10,.55),transparent 55%)}
+.login .lado-img p{position:absolute;z-index:2;left:var(--m);bottom:40px;right:var(--m);color:#fff;font-family:var(--serif);font-size:clamp(28px,3vw,42px);line-height:1.1;max-width:16ch}
+.login .lado-form{display:flex;flex-direction:column;justify-content:center;gap:26px;padding:50px var(--m)}
+.login h2{font-size:clamp(44px,5vw,72px)}
+.login p{color:#4a453e}
+.codigo{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.codigo .campo{flex:1;min-width:200px}
+.codigo input{font-size:22px;letter-spacing:.2em;text-transform:uppercase}
+.ou{display:flex;align-items:center;gap:14px;color:var(--suave)}
+.ou::before,.ou::after{content:"";flex:1;height:1px;background:var(--linha)}
+@media (max-width:820px){.login{grid-template-columns:1fr}.login .lado-img{height:34svh}}
+
+/* painel */
+.ola{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:26px}
+.ola h2{font-size:clamp(40px,5vw,64px)}
+.ola p{color:var(--suave);margin-top:6px}
+.cartao{background:#fff;border:1px solid var(--linha);padding:clamp(18px,2.4vw,28px);margin-bottom:16px}
+.capa-proj{padding:0;overflow:hidden}
+.capa-proj .ph{aspect-ratio:21/7;background:#ddd center/cover}
+.capa-proj .in{padding:20px clamp(18px,2.4vw,28px) 22px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:flex-end}
+.capa-proj h3{font-size:clamp(26px,2.6vw,34px)}
+.capa-proj .sub{color:var(--suave);font-size:13.5px;margin-top:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;border:1px solid var(--linha);border-radius:999px;padding:3px 11px;background:#fff;display:inline-flex;align-items:center;gap:7px}
+.chip .d{width:7px;height:7px;border-radius:50%;background:var(--salvia)}
+.chip.pc{background:var(--salviaL);border-color:#cfd6c0;color:var(--verde);font-weight:500}
+.cab-c{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.cab-c h3{font-size:26px}
+.cab-c .rot{color:var(--suave)}
+/* linha do tempo */
+.tl{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;margin-top:4px}
+.tl button{border:0;background:none;padding:0;cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:9px}
+.tl .bar{height:8px;background:#e7e0d5;border-radius:4px;transition:outline .2s}
+.tl .ok .bar{background:var(--salvia)}
+.tl .and .bar{background:repeating-linear-gradient(45deg,var(--salvia) 0 6px,#bcc4a8 6px 12px);background-size:17px 17px;animation:anda 1.2s linear infinite}
+@keyframes anda{to{background-position:17px 0}}
+.tl .nome{font-size:11.5px;line-height:1.3;color:var(--suave);padding-right:6px}
+.tl .ok .nome,.tl .and .nome{color:var(--tinta)}
+.tl button.sel .bar{outline:2px solid var(--tinta);outline-offset:2px}
+@media (max-width:760px){.tl .nome{display:none}}
+.stepbox{margin-top:16px;background:var(--creme);padding:14px 16px;font-size:14px}
+.stepbox .dt{color:var(--terra);font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:500}
+.stepbox .t{font-family:var(--serif);font-size:24px;margin:2px 0 4px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.stepbox ul{margin:4px 0 0;padding-left:18px;color:#4a453e}
+.tag{flex:none;white-space:nowrap;display:inline-block;font-family:var(--sans);font-size:11px;font-weight:500;border-radius:999px;padding:2px 10px;letter-spacing:0}
+.tag.ok{background:var(--salviaL);color:var(--verde)}.tag.pend{background:var(--rosaL);color:#94493f}.tag.and{background:#f3e7d6;color:var(--terra)}
+.marcos{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.marco{border:1px solid var(--linha);padding:10px 12px}
+.marco b{display:block;font-family:var(--serif);font-weight:400;font-size:22px;line-height:1.1}
+.marco span{font-size:11.5px;color:var(--suave)}
+.marco.next{background:var(--verde);color:var(--creme);border-color:var(--verde)}.marco.next span{color:#d6d1c3}
+@media (max-width:640px){.marcos{grid-template-columns:1fr 1fr}}
+
+/* decisões */
+.decisoes{border:1px solid var(--rosa);background:#fffaf8}
+.decisoes .cab-c h3{display:flex;gap:12px;align-items:center}
+.decisoes .cab-c h3::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--rosa);box-shadow:0 0 0 0 rgba(184,106,94,.5);animation:pulsa 2s infinite}
+@keyframes pulsa{70%{box-shadow:0 0 0 10px rgba(184,106,94,0)}100%{box-shadow:0 0 0 0 rgba(184,106,94,0)}}
+.dec-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:760px){.dec-grid{grid-template-columns:1fr}}
+.dec{border:1px solid var(--linha);background:#fff;padding:16px 18px;display:flex;flex-direction:column;gap:12px;transition:border-color .3s,background .3s}
+.dec .topo-dec{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.dec h4{font-size:23px;line-height:1.1}
+.dec .prazo{font-size:11.5px;color:var(--terra);font-weight:500;letter-spacing:.06em;text-transform:uppercase}
+.dec p{font-size:13.5px;color:#4a453e}
+.dec .alts{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.alt{border:1px solid var(--linha);background:#fff;padding:0;cursor:pointer;text-align:left;display:flex;flex-direction:column}
+.alt i{display:block;height:44px}
+.alt span{font-size:12px;padding:6px 8px;line-height:1.3}
+.alt[aria-pressed="true"]{outline:2px solid var(--tinta);outline-offset:1px}
+.dec .acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+.dec .acoes button,.dec .acoes a{font-size:13px;padding:8px 14px;border:1px solid var(--tinta);background:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.dec .acoes .aprovar{background:var(--verde);border-color:var(--verde);color:var(--creme)}
+.dec .acoes .aprovar:disabled{opacity:.35;cursor:not-allowed}
+.dec .coment{display:none;flex-direction:column;gap:8px}
+.dec.comentando .coment{display:flex}
+.dec .coment textarea{font:inherit;font-size:14px;border:1px solid var(--linha);padding:10px;min-height:70px;resize:vertical}
+.dec.feito{background:var(--salviaL);border-color:#cfd6c0}
+.dec.feito .acoes,.dec.feito .alts,.dec.feito .coment{display:none}
+.dec .status{display:none;font-size:13px;color:var(--verde)}
+.dec.feito .status{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.dec .status button{background:none;border:0;border-bottom:1px solid currentColor;cursor:pointer;padding:0;font-size:12px;color:var(--suave)}
+.envio{margin-top:16px;display:none;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--creme);padding:14px 16px;font-size:14px}
+.envio.on{display:flex}
+
+/* drive */
+.drive{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media (max-width:860px){.drive{grid-template-columns:1fr 1fr}}
+.pasta{border:1px solid var(--linha);padding:16px;display:flex;flex-direction:column;gap:10px;background:#fff;transition:border-color .2s,transform .2s;min-height:150px}
+a.pasta:hover{border-color:var(--tinta);transform:translateY(-2px)}
+.pasta svg{width:30px;height:30px;stroke:var(--terra);fill:none;stroke-width:1.4}
+.pasta b{font-family:var(--serif);font-weight:400;font-size:22px;line-height:1.1}
+.pasta small{color:var(--suave);font-size:12.5px;line-height:1.4}
+.pasta .ir{margin-top:auto;font-size:12px;color:var(--terra);display:flex;justify-content:space-between}
+.pasta.off{opacity:.55}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.g2 > .cartao{margin:0}
+@media (max-width:760px){.g2{grid-template-columns:1fr}}
+.linha-l{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #efe8de;font-size:13.5px}
+.linha-l:last-child{border-bottom:0}
+.linha-l small{display:block;color:var(--suave);font-size:12px}
+.linha-l .m{color:var(--suave);font-size:12px;white-space:nowrap}
+.time{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pp{display:flex;gap:10px;align-items:center;font-size:13.5px}
+.pp .av{width:34px;height:34px;border-radius:50%;background:var(--verde);color:var(--creme);display:flex;align-items:center;justify-content:center;font-family:var(--serif);flex:none}
+.pp small{display:block;color:var(--suave);font-size:11.5px;line-height:1.3}
+.aviso{font-size:12.5px;color:var(--suave);margin-top:14px}
+.portal-card{display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.portal-card h3{font-size:34px}
+.no-portal{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:0 30px}
+.no-portal li{padding:12px 0;border-bottom:1px solid var(--linha);display:flex;flex-direction:column}
+.no-portal b{font-weight:400;font-family:var(--serif);font-size:20px}
+.no-portal span{color:var(--suave);font-size:13px}
+@media (max-width:700px){.no-portal{grid-template-columns:1fr}}
+.ac-rodape{text-align:center;color:var(--suave);font-size:12.5px;margin-top:34px}
+.ac-rodape img{width:48px;margin:0 auto 10px;opacity:.85}
+</style>
+</head>
+<body>
+
+<!-- ================= TOPO ================= -->
+<header class="topo" id="topo">
+  <a class="marca" href="#inicio">DUO COLAB / ARQUITETURA</a>
+  <nav aria-label="Principal">
+    <ul class="rot" id="menu">
+      <li class="tem-sub"><a href="#projetos">Projetos</a>
+        <ul class="sub">
+          <li><a href="#projetos">Todos</a></li>
+          <li><a href="#projetos-residencial">Residencial</a></li>
+          <li><a href="#projetos-comercial">Comercial</a></li>
+        </ul></li>
+      <li><a href="#mostras">Mostras</a></li>
+      <li><a href="#servicos">Serviços</a></li>
+      <li><a href="#sobre">Sobre nós</a></li>
+      <li><a href="#proposta">Proposta</a></li>
+    </ul>
+    <a class="btn-cliente rot" href="/portal"><span>Área do cliente</span></a>
+    <button type="button" class="menu-btn rot" id="menuBtn" aria-expanded="false" aria-controls="menu">Menu</button>
+  </nav>
+</header>
+
+<!-- ================= HERO ================= -->
+<section class="hero" id="inicio">
+  <img src="/img/equipe/capa-magda-maisa-jacauna.jpg" alt="Magda e Maísa, arquitetas e sócias da Duo Colab, no ambiente que assinaram na Mostra Jacaúna">
+  <div class="conteudo">
+    <h1>Arquitetura e interiores para a vida real.</h1>
+    <p class="rot sub">Magda e Maísa · Duo Colab<br>Recife, desde 2021.</p>
+    <div class="acoes">
+      <a class="rot link" href="#projetos">Ver projetos <span class="seta" aria-hidden="true">→</span></a>
+      <a class="rot link" href="#proposta">Pedir proposta <span class="seta" aria-hidden="true">→</span></a>
+    </div>
+  </div>
+  <p class="rot legenda">Magda e Maísa<br>Mostra Jacaúna</p>
+</section>
+
+<main>
+
+<!-- ================= MANIFESTO ================= -->
+<section class="manifesto" aria-labelledby="t-turb">
+  <span class="rot">Manifesto</span>
+  <h2 id="t-turb">Nós guiamos você do turbilhão ao ufa.</h2>
+  <p>Todo projeto começa num turbilhão: dinheiro, prazo, decisões, fornecedores e aquele frio na barriga. A gente chegou nessa frase porque é exatamente o que vemos acontecer com cada cliente. Nosso papel é atravessar esse turbilhão junto com você, organizando escolhas, cuidando de cada etapa e traduzindo o que você quer em cor, textura, ritmo e material, até o "ufa": o alívio de ver tudo pronto, com a sua cara.</p>
+  <p>Não fazemos casa de revista: fazemos casa real, a partir de uma conversa aberta, sem você ficar travado ou com vergonha de dizer o que quer.</p>
+  <div class="quadro" aria-label="Ambientes concluídos pela Duo Colab">
+    <figure class="qa" data-zoom-src="/img/proj/ped-1-espera.jpg" data-zoom-legenda="Consultório pediátrico · espera" data-grupo="quadro"><img src="/img/proj/ped-1-espera.jpg" alt="Consultório pediátrico · espera" loading="lazy"></figure>
+    <figure class="qb" data-zoom-src="/img/proj/vald-1-varanda.jpg" data-zoom-legenda="Edifício Valdemar de Oliveira · varanda" data-grupo="quadro"><img src="/img/proj/vald-1-varanda.jpg" alt="Edifício Valdemar de Oliveira · varanda" loading="lazy"></figure>
+    <figure class="qc" data-zoom-src="/img/proj/sind-1-recepcao-reuniao.jpg" data-zoom-legenda="Sede dos Peritos Criminais · recepção" data-grupo="quadro"><img src="/img/proj/sind-1-recepcao-reuniao.jpg" alt="Sede dos Peritos Criminais · recepção" loading="lazy"></figure>
+    <figure class="qd" data-zoom-src="/img/proj/ped-7-mural.jpg" data-zoom-legenda="Consultório pediátrico · mural" data-grupo="quadro"><img src="/img/proj/ped-7-mural.jpg" alt="Consultório pediátrico · mural" loading="lazy"></figure>
+    <figure class="qe" data-zoom-src="/img/proj/vald-3-jantar-estar.jpg" data-zoom-legenda="Edifício Valdemar de Oliveira · jantar e estar" data-grupo="quadro"><img src="/img/proj/vald-3-jantar-estar.jpg" alt="Edifício Valdemar de Oliveira · jantar e estar" loading="lazy"></figure>
+    <figure class="qf" data-zoom-src="/img/proj/sind-3-espera.jpg" data-zoom-legenda="Sede dos Peritos Criminais · espera" data-grupo="quadro"><img src="/img/proj/sind-3-espera.jpg" alt="Sede dos Peritos Criminais · espera" loading="lazy"></figure>
+    <figure class="qg" data-zoom-src="/img/proj/ped-3-consultorio.jpg" data-zoom-legenda="Consultório pediátrico · atendimento" data-grupo="quadro"><img src="/img/proj/ped-3-consultorio.jpg" alt="Consultório pediátrico · atendimento" loading="lazy"></figure>
+    <figure class="qh" data-zoom-src="/img/proj/vald-4-banheiro.jpg" data-zoom-legenda="Edifício Valdemar de Oliveira · banheiro" data-grupo="quadro"><img src="/img/proj/vald-4-banheiro.jpg" alt="Edifício Valdemar de Oliveira · banheiro" loading="lazy"></figure>
+    <figure class="qi" data-zoom-src="/img/proj/sind-2-copa.jpg" data-zoom-legenda="Sede dos Peritos Criminais · copa" data-grupo="quadro"><img src="/img/proj/sind-2-copa.jpg" alt="Sede dos Peritos Criminais · copa" loading="lazy"></figure>
+    <figure class="qj" data-zoom-src="/img/proj/ped-6-recreacao.jpg" data-zoom-legenda="Consultório pediátrico · cantinho das crianças" data-grupo="quadro"><img src="/img/proj/ped-6-recreacao.jpg" alt="Consultório pediátrico · cantinho das crianças" loading="lazy"></figure>
+    <figure class="qk" data-zoom-src="/img/proj/sind-4-estante.jpg" data-zoom-legenda="Sede dos Peritos Criminais · estante" data-grupo="quadro"><img src="/img/proj/sind-4-estante.jpg" alt="Sede dos Peritos Criminais · estante" loading="lazy"></figure>
+  </div>
+  <div class="ufa">
+    <span class="rot">O ufa</span>
+    <h3>Calma de praia, não calma de lago.</h3>
+    <p>É o alívio do fim da maratona: o espaço pronto, vivo e com movimento, do jeito de quem vai usar.</p>
+  </div>
+</section>
+
+<!-- ================= PORTFÓLIO ================= -->
+<section class="projetos" id="projetos" aria-labelledby="t-mais">
+  <div class="cab">
+    <div>
+      <span class="rot olho">Portfólio</span>
+      <h2 id="t-mais">Casas, consultórios<br>e escritórios.</h2>
+    </div>
+    <p>Residências e espaços de trabalho: reformas de apartamentos antigos, interiores de apartamentos novos, escritórios e consultórios. Filtre por tipo e escolha um projeto para ver as imagens. Quando há fotos da obra pronta, elas aparecem primeiro.</p>
+  </div>
+  <div class="filtros" id="filtros"><div class="f1 rot" id="f1" role="group" aria-label="Categoria"></div><div class="f2 rot" id="f2" role="group" aria-label="Subcategoria"></div></div>
+  <div class="capas" id="capas" role="group" aria-label="Projetos"></div>
+  <div class="proj-info" id="projInfo"><div><span class="rot olho" id="projTipo"></span><h3 id="projNome"></h3><p class="proj-sub" id="projSub" hidden></p></div><div><p id="projTexto"></p><dl class="rot" id="projDl"></dl></div></div>
+  <div class="mosaico proj" id="projMos"></div>
+  <div class="ad" id="projAD" hidden></div>
+  <p class="rot nota" id="projNota"></p>
+</section>
+
+<!-- ======================= DESTAQUE: APÊ DE BENTO ======================= -->
+<section class="portfolio" id="ape-de-bento" aria-labelledby="t-proj">
+  <div class="port-cab">
+    <div>
+      <span class="rot olho">Em destaque · Residencial · Apartamento</span>
+      <h2 id="t-proj">Apê de Bento</h2>
+      <p class="contexto">Seis semanas do contrato à mudança.</p>
+    </div>
+    <div class="texto">
+      <p>Uma cliente que ama cinza e uma mudança já marcada. A base ficou clara e neutra, como ela pediu. A madeira e os verdes foram sugestão nossa, para dar personalidade sem perder a calma: o cinza esverdeado da marcenaria, o travertino, o tijolinho e os puxadores dourados.</p>
+      <p>O nome é do Bento, o cachorro da família e dono oficial do apê.</p>
+      <dl class="rot">
+        <dt>Local</dt><dd>Boa Viagem · PE</dd>
+        <dt>Área</dt><dd>77,67 m²</dd>
+        <dt>Ambientes</dt><dd>Sala, suítes e escritório</dd>
+        <dt>Status</dt><dd>Em obra</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="destaque" data-zoom-src="/img/bento-render-jantar.jpg" data-zoom-legenda="Sala de estar e jantar">
+    <img src="/img/bento-render-jantar.jpg" alt="Sala integrada com sofá claro, parede de tijolinho, mesa de jantar de madeira e pendente de globos" loading="lazy">
+    <span class="selo rot">Em obra</span>
+  </div>
+
+  <div class="abas-amb rot" id="abasAmb" role="group" aria-label="Ambientes do projeto"></div>
+  <div class="amb-texto"><h3 id="ambNome"></h3><p id="ambTexto"></p></div>
+  <div class="mosaico" id="mosaico"></div>
+  <p class="rot nota">Imagens do projeto (renders). Fotos do apê pronto em breve.</p>
+</section>
+
+<!-- ======================= MOSTRAS ======================= -->
+<section class="mostras" id="mostras" aria-labelledby="t-mostras">
+  <div class="cab">
+    <div><span class="rot olho">Mostras de arquitetura</span><h2 id="t-mostras">Mostra Jacaúna</h2></div>
+    <p>Já assinamos três ambientes na Mostra Jacaúna, sempre no mesmo endereço: a fachada da loja, o primeiro espaço que o visitante vê. Cada edição é um laboratório para testar cor, material e ideias que depois chegam às casas dos nossos clientes.</p>
+  </div>
+  <ol class="edicoes rot">
+    <li><b>1º ambiente</b><span>Fotos em breve</span></li>
+    <li class="premio"><b>2º ambiente</b><span>Premiado com uma viagem à Europa</span></li>
+    <li aria-current="true"><b>3º ambiente</b><span>Edição mais recente</span></li>
+  </ol>
+  <div class="mosaico mostra-mos"><figure class="larga" data-zoom-src="/img/mostras/jac3-1-ambiente.jpg" data-zoom-legenda="Mostra Jacaúna · O ambiente inteiro, na fachada da loja" data-grupo="mostra"><img src="/img/mostras/jac3-1-ambiente.jpg" alt="O ambiente inteiro, na fachada da loja" loading="lazy"></figure><figure class="" data-zoom-src="/img/mostras/jac3-2-estar.jpg" data-zoom-legenda="Mostra Jacaúna · Estar com sofá modular e mesas orgânicas" data-grupo="mostra"><img src="/img/mostras/jac3-2-estar.jpg" alt="Estar com sofá modular e mesas orgânicas" loading="lazy"></figure><figure class="" data-zoom-src="/img/mostras/jac3-3-jantar.jpg" data-zoom-legenda="Mostra Jacaúna · Jantar com espelho orgânico e arandela" data-grupo="mostra"><img src="/img/mostras/jac3-3-jantar.jpg" alt="Jantar com espelho orgânico e arandela" loading="lazy"></figure><figure class="terco" data-zoom-src="/img/mostras/jac3-4-sofa.jpg" data-zoom-legenda="Mostra Jacaúna · Sofá, nichos e as fotografias de árvores" data-grupo="mostra"><img src="/img/mostras/jac3-4-sofa.jpg" alt="Sofá, nichos e as fotografias de árvores" loading="lazy"></figure><figure class="terco" data-zoom-src="/img/mostras/jac3-5-poltrona.jpg" data-zoom-legenda="Mostra Jacaúna · Canto de leitura" data-grupo="mostra"><img src="/img/mostras/jac3-5-poltrona.jpg" alt="Canto de leitura" loading="lazy"></figure><figure class="terco" data-zoom-src="/img/mostras/jac3-6-mesa.jpg" data-zoom-legenda="Mostra Jacaúna · Centro de mesa em mosaico" data-grupo="mostra"><img src="/img/mostras/jac3-6-mesa.jpg" alt="Centro de mesa em mosaico" loading="lazy"></figure><figure class="" data-zoom-src="/img/mostras/jac3-7-nichos.jpg" data-zoom-legenda="Mostra Jacaúna · Painel de madeira com nichos verdes" data-grupo="mostra"><img src="/img/mostras/jac3-7-nichos.jpg" alt="Painel de madeira com nichos verdes" loading="lazy"></figure><figure class="" data-zoom-src="/img/mostras/jac3-9-cantinho.jpg" data-zoom-legenda="Mostra Jacaúna · Detalhes da estante" data-grupo="mostra"><img src="/img/mostras/jac3-9-cantinho.jpg" alt="Detalhes da estante" loading="lazy"></figure></div>
+  <p class="rot nota">3º ambiente · fotos profissionais da mostra.</p>
+</section>
+
+
+<!-- ================= PROCESSO ================= -->
+<section class="processo" id="processo" aria-labelledby="t-como">
+  <span class="rot olho">Processo</span>
+  <h2 id="t-como">Como é contratar a Duo</h2>
+  <ol class="etapas">
+    <li><span class="n">01</span><h3>Conversa</h3><p>Primeiro contato pelo WhatsApp e uma videochamada com as arquitetas para entender seu momento.</p></li>
+    <li><span class="n">02</span><h3>Briefing</h3><p>Um questionário feito para você: rotina, gostos, o que não funciona hoje, prazo e orçamento.</p></li>
+    <li><span class="n">03</span><h3>Levantamento</h3><p>Medimos o espaço parede por parede e conferimos as plantas da construtora com a realidade.</p></li>
+    <li><span class="n">04</span><h3>Criação</h3><p>Suas referências viram uma ideia só sua, em desenho 2D e 3D, apresentada no escritório ou online.</p></li>
+    <li><span class="n">05</span><h3>Detalhes e fornecedores</h3><p>Materiais, marcenaria, iluminação e a indicação de fornecedores que a gente conhece e filtra.</p></li>
+    <li><span class="n">06</span><h3>Obra e chave</h3><p>Acompanhamos a obra até a entrega. E, durante tudo isso, você acompanha o projeto pela Área do Cliente.</p></li>
+  </ol>
+  <p class="rot" style="color:var(--suave)">O projeto pode ser contratado inteiro ou por etapas.</p>
+</section>
+
+<!-- ================= SERVIÇOS ================= -->
+<section class="servicos" id="servicos" aria-labelledby="t-servicos">
+  <span class="rot olho">Serviços</span>
+  <h2 id="t-servicos">O que fazemos</h2>
+  <ul class="serv-lista" id="servLista"></ul>
+  <div class="pacotes">
+    <div class="pacote"><span class="rot">Construção · Pacote 1</span><h4>Legal</h4><p>O projeto para aprovar na Prefeitura e tirar a obra do papel com tudo em dia.</p></div>
+    <div class="pacote"><span class="rot">Construção · Pacote 2</span><h4>Legal + Executivo</h4><p>Aprovação e o projeto completo para a obra executar sem improviso.</p></div>
+    <div class="pacote"><span class="rot">Construção · Pacote 3</span><h4>Legal + Executivo + Interiores</h4><p>Do terreno ao último puxador. Os pacotes se adaptam ao seu momento.</p></div>
+  </div>
+</section>
+
+<!-- ================= SOBRE / EQUIPE ================= -->
+<section class="equipe" id="sobre" aria-labelledby="t-sobre">
+  <div class="sobre-grid">
+    <div class="texto">
+      <span class="rot olho">Sobre nós</span>
+      <h2 id="t-sobre">Duas arquitetas.<br>Uma equipe.<br>Muita colaboração.</h2>
+      <p>A Duo Colab nasceu em 2021, em Recife, fundada pelas arquitetas Magda Mendes e Maísa Assunção. Começou remota, em plena pandemia, e em 2022 ganhou endereço no Espinheiro, onde está até hoje.</p>
+      <p>Somos duas, mas sempre trabalhamos em equipe. Hoje somos seis, cada uma no seu papel, e é esse time que acompanha seu projeto do briefing à entrega da chave.</p>
+      <p>Magda e Maísa se conheceram na faculdade, em 2011. Desde então, nunca perderam a afinidade de trabalho, e o sonho do escritório próprio se realizou em 2021.</p>
+      <p>A Duo Colab já nasceu com uma ideia clara: trabalhar em equipe, nunca só as duas e nunca dividindo os clientes entre elas. Cada cliente é atendido pelas duas e por uma equipe inteira, com cada pessoa dando o melhor que tem.</p>
+    </div>
+    <figure class="foto-equipe real">
+      <img src="/img/equipe/magda-maisa-pediatrico.jpg" alt="Magda e Maísa sentadas no banco do mural de montanhas de um consultório projetado pela Duo Colab" loading="lazy">
+      <figcaption><span class="rot">Magda e Maísa</span><b>As sócias da Duo Colab, num consultório que a gente projetou.</b></figcaption>
+    </figure>
+  </div>
+
+  <ul class="pessoas">
+    <li><img class="av foto" src="/img/equipe/magda-av.jpg" alt="Magda"><div><b>Magda Mendes</b><span>Arquiteta e sócia fundadora</span></div></li>
+    <li><img class="av foto" src="/img/equipe/maisa-av.jpg" alt="Maísa"><div><b>Maísa Assunção</b><span>Arquiteta e sócia fundadora</span></div></li>
+    <li><span class="av">R</span><div><b>Renata Pinheiro</b><span>Arquiteta · 3D e detalhamento</span></div></li>
+    <li><span class="av">S</span><div><b>Suelen Gomes</b><span>Designer de interiores · modelagem 3D</span></div></li>
+    <li><span class="av">M</span><div><b>Mayara Santos</b><span>Administrativo, orçamentos e contratos</span></div></li>
+    <li><span class="av">J</span><div><b>Julia Negreiros</b><span>Estagiária de arquitetura · desenho</span></div></li>
+  </ul>
+
+  <div class="cobogo-faixa">
+    <img src="/img/cobogo.png" alt="O cobogó da Duo Colab: quatro peças que se encaixam num quadrado">
+    <p>Nosso símbolo é o cobogó: nordestino, acessível e vazado. Deixa a luz e o vento passarem e refresca a casa no calor de Recife. Representa também o trabalho em equipe que deu nome à Duo Colab. É assim que a gente gosta de projetar.</p>
+  </div>
+</section>
+
+<!-- ================= PROPOSTA ================= -->
+<section class="proposta" id="proposta" aria-labelledby="t-prop">
+  <div class="prop-grid">
+    <div class="intro">
+      <span class="rot olho">Novo projeto</span>
+      <h2 id="t-prop">Vamos conversar sobre o seu espaço?</h2>
+      <p>Conte um pouco do seu momento em quatro passos rápidos. A gente recebe tudo organizado e volta com os próximos passos para a sua proposta.</p>
+      <div class="dados">
+        <div><span class="rot">WhatsApp</span><span>(81) 99625-2833</span></div>
+        <div><span class="rot">Instagram</span><a href="https://www.instagram.com/duocolab.arq/">@duocolab.arq</a></div>
+        <div><span class="rot">Escritório</span><span>Sala 105, Empresarial Agamenon Magalhães<br>Av. Agamenon Magalhães, 2656 · Espinheiro, Recife</span></div>
+      </div>
+    </div>
+
+    <form class="form" id="formProp" novalidate>
+      <div class="passos" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i></div>
+
+      <div class="passo on" data-p="0">
+        <span class="rot" style="color:var(--suave)">Passo 1 de 4</span>
+        <h3>O que você quer fazer?</h3>
+        <div class="opcoes" data-campo="servico" data-multi="1">
+          <button type="button">Interiores residenciais</button><button type="button">Construir uma casa</button>
+          <button type="button">Reforma</button><button type="button">Espaço comercial</button>
+          <button type="button">Legalização</button><button type="button">Consultoria</button>
+          <button type="button">Projeto isolado (3D, executivo...)</button><button type="button">Ainda não sei</button>
+        </div>
+      </div>
+
+      <div class="passo" data-p="1">
+        <span class="rot" style="color:var(--suave)">Passo 2 de 4</span>
+        <h3>Como está o imóvel hoje?</h3>
+        <div class="opcoes" data-campo="imovel">
+          <button type="button">Recém-entregue pela construtora</button><button type="button">Apartamento antigo</button>
+          <button type="button">Casa existente</button><button type="button">Terreno</button>
+          <button type="button">Imóvel alugado</button><button type="button">Ponto comercial</button>
+        </div>
+        <div class="duas">
+          <div class="campo"><label class="rot" for="fBairro">Bairro / cidade</label><input id="fBairro" placeholder="Ex.: Graças, Recife"></div>
+          <div class="campo"><label class="rot" for="fArea">Área aproximada</label><input id="fArea" placeholder="Ex.: 90 m²"></div>
+        </div>
+      </div>
+
+      <div class="passo" data-p="2">
+        <span class="rot" style="color:var(--suave)">Passo 3 de 4</span>
+        <h3>Qual é o seu momento?</h3>
+        <div class="opcoes" data-campo="prazo">
+          <button type="button">Tenho mudança marcada</button><button type="button">Quero começar nos próximos meses</button>
+          <button type="button">Sem pressa, quero fazer bem feito</button><button type="button">Só pesquisando por enquanto</button>
+        </div>
+        <div class="campo"><label class="rot" for="fConta">Conte um pouco mais (opcional)</label><textarea id="fConta" placeholder="Quem mora, o que não funciona hoje, o que você sonha para o espaço..."></textarea></div>
+      </div>
+
+      <div class="passo" data-p="3">
+        <span class="rot" style="color:var(--suave)">Passo 4 de 4</span>
+        <h3>Como a gente fala com você?</h3>
+        <div class="duas">
+          <div class="campo"><label class="rot" for="fNome">Nome</label><input id="fNome" autocomplete="name"></div>
+          <div class="campo"><label class="rot" for="fZap">WhatsApp</label><input id="fZap" inputmode="tel" autocomplete="tel" placeholder="(81) 9 ...."></div>
+        </div>
+        <div class="campo"><label class="rot" for="fComo">Como conheceu a Duo?</label>
+          <select id="fComo"><option value="">Escolha</option><option>Instagram</option><option>Indicação</option><option>Google</option><option>Fornecedor / parceiro</option><option>Outro</option></select></div>
+      </div>
+
+      <div class="passo" data-p="4">
+        <span class="rot" style="color:var(--suave)">Pronto</span>
+        <h3>Tudo certo. Agora é só enviar.</h3>
+        <p style="color:#4a453e">Sua mensagem já está montada. Toque no botão para abrir o WhatsApp da Duo com ela.</p>
+        <div class="resumo-env" id="resumoEnv"></div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">
+          <a class="btn verde" id="linkZap" href="#" target="_blank" rel="noopener">Enviar pelo WhatsApp →</a>
+          <button type="button" class="btn claro rot" id="copiaMsg">Copiar mensagem</button>
+        </div>
+      </div>
+
+      <p class="erro" id="erroForm" role="alert"></p>
+      <div class="nav-form" id="navForm">
+        <button type="button" class="btn claro rot" id="voltar" style="visibility:hidden">← Voltar</button>
+        <button type="submit" class="btn" id="avancar">Continuar →</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+</main>
+
+<footer class="rodape" id="contato">
+  <div class="rod-grid">
+    <div class="rod-marca">
+      <img src="/img/cobogo.png" alt="">
+      <p class="rod-nome">Duo Colab<br>Arquitetura</p>
+      <p class="rod-frase">Nós guiamos você do turbilhão ao ufa.</p>
+    </div>
+    <div class="rod-contatos">
+      <span class="rot">Fale com a gente</span>
+      <a class="rod-link" href="https://wa.me/5581996252833?text=Ol%C3%A1%21%20Vim%20pelo%20site%20da%20Duo%20Colab%20e%20gostaria%20de%20conversar%20sobre%20um%20projeto." target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5A11.8 11.8 0 0 0 1.9 17.7L.3 23.7l6.2-1.6A11.8 11.8 0 0 0 20.5 3.5zM12 21.7a9.8 9.8 0 0 1-5-1.4l-.4-.2-3.7 1 1-3.6-.2-.4A9.8 9.8 0 1 1 12 21.7zm5.4-7.3c-.3-.1-1.8-.9-2-1s-.5-.1-.7.1-.8 1-.9 1.2-.3.2-.6.1a8 8 0 0 1-2.4-1.5 9 9 0 0 1-1.6-2c-.2-.3 0-.5.1-.6l.4-.5.3-.5v-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6a1.1 1.1 0 0 0-.8.4 3.4 3.4 0 0 0-1 2.5 5.9 5.9 0 0 0 1.2 3.1 13.4 13.4 0 0 0 5.2 4.6c1.9.8 2.7.9 3.6.7a3 3 0 0 0 2-1.4 2.5 2.5 0 0 0 .2-1.4c-.1-.1-.3-.2-.6-.3z" fill="currentColor" stroke="none"/></svg><span><b>WhatsApp</b>(81) 99625-2833</span></a>
+      <a class="rod-link" href="https://www.instagram.com/duocolab.arq/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg><span><b>Instagram</b>@duocolab.arq</span></a>
+      <a class="rod-link" href="https://www.google.com/maps/dir/?api=1&amp;destination=Empresarial%20Agamenon%20Magalh%C3%A3es%2C%20Av.%20Agamenon%20Magalh%C3%A3es%2C%202656%2C%20Espinheiro%2C%20Recife%20-%20PE" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span><b>Escritório</b>Empresarial Agamenon Magalhães, sala 105<br>Av. Agamenon Magalhães, 2656 · Espinheiro, Recife/PE</span></a>
+    </div>
+    <div class="rod-mapa">
+      <div class="mapa-box" id="mapaBox" data-src="https://www.google.com/maps?q=Empresarial%20Agamenon%20Magalh%C3%A3es%2C%20Av.%20Agamenon%20Magalh%C3%A3es%2C%202656%2C%20Espinheiro%2C%20Recife%20-%20PE&amp;output=embed">
+        <div class="mapa-ph" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>Espinheiro · Recife</span></div>
+      </div>
+      <a class="rot link" href="https://www.google.com/maps/dir/?api=1&amp;destination=Empresarial%20Agamenon%20Magalh%C3%A3es%2C%20Av.%20Agamenon%20Magalh%C3%A3es%2C%202656%2C%20Espinheiro%2C%20Recife%20-%20PE" target="_blank" rel="noopener">Como chegar <span class="seta" aria-hidden="true">→</span></a>
+    </div>
+  </div>
+  <div class="rod-base rot">
+    <span>© 2026 Duo Colab Arquitetura · Recife, PE</span>
+    <a class="link rot" href="/portal" style="padding-bottom:2px">Área do cliente <span class="seta" aria-hidden="true">→</span></a>
+  </div>
+</footer>
+
+<a class="zap-flutua" href="https://wa.me/5581996252833?text=Ol%C3%A1%21%20Vim%20pelo%20site%20da%20Duo%20Colab%20e%20gostaria%20de%20conversar%20sobre%20um%20projeto." target="_blank" rel="noopener" aria-label="Conversar no WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5A11.8 11.8 0 0 0 1.9 17.7L.3 23.7l6.2-1.6A11.8 11.8 0 0 0 20.5 3.5zM12 21.7a9.8 9.8 0 0 1-5-1.4l-.4-.2-3.7 1 1-3.6-.2-.4A9.8 9.8 0 1 1 12 21.7zm5.4-7.3c-.3-.1-1.8-.9-2-1s-.5-.1-.7.1-.8 1-.9 1.2-.3.2-.6.1a8 8 0 0 1-2.4-1.5 9 9 0 0 1-1.6-2c-.2-.3 0-.5.1-.6l.4-.5.3-.5v-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6a1.1 1.1 0 0 0-.8.4 3.4 3.4 0 0 0-1 2.5 5.9 5.9 0 0 0 1.2 3.1 13.4 13.4 0 0 0 5.2 4.6c1.9.8 2.7.9 3.6.7a3 3 0 0 0 2-1.4 2.5 2.5 0 0 0 .2-1.4c-.1-.1-.3-.2-.6-.3z" fill="currentColor" stroke="none"/></svg></a>
+
+<!-- ================= LIGHTBOX ================= -->
+<dialog id="zoom" aria-label="Imagem ampliada">
+  <div class="z">
+    <img alt="">
+    <button type="button" class="zb ant" aria-label="Anterior">‹</button>
+    <button type="button" class="zb prox" aria-label="Próxima">›</button>
+    <button type="button" class="zf rot">Fechar ✕</button>
+    <p class="zl rot"></p>
+  </div>
+</dialog>
+
+<script>
+/* =====================================================================
+   PORTFÓLIO · Apê de Bento (somente renders / ambientes projetados)
+   ===================================================================== */
+const ambientes = [
+  { nome:"Sala de estar e jantar",
+    texto:"Rack suspenso, painel de madeira até o teto, prateleiras e um buffet de pegada retrô. A TV mudou de lado e o antigo canto da TV virou varanda, com tijolinho, mesa e conversa.",
+    fotos:[["bento-projeto-4.jpg","larga"],["bento-projeto-1.jpg"],["bento-projeto-2.jpg"],["bento-projeto-3.jpg","larga"]] },
+  { nome:"Suíte do casal",
+    texto:"Cabeceira em painel de madeira com luz quente embutida na marcenaria. Uma suíte compacta que ficou calma e acolhedora.",
+    fotos:[["bento-render-suite.jpg","larga"]] },
+  { nome:"Quarto de João, que ama tênis",
+    texto:"Atemporal, sem azul e sem cores marcantes: cinza esverdeado com madeira, mesa de estudos e detalhes que lembram o tênis, como o quadriculado e as raquetes na parede.",
+    fotos:[["bento-joao-render-1.jpg","larga"],["bento-joao-render-5.jpg"],["bento-joao-render-4.jpg"],["bento-joao-render-2.jpg"],["bento-joao-render-3.jpg"],["bento-joao-projeto-1.jpg","larga"]] },
+  { nome:"Hóspedes e escritório",
+    texto:"Painel de cabeceira, armário com portas novas e uma área de estudos com bancada em pedra, escrivaninha e móvel da impressora.",
+    fotos:[["bento-render-escritorio.jpg","larga"],["bento-hospedes-par-1.jpg"],["bento-hospedes-projeto-1.jpg"],["bento-hospedes-projeto-2.jpg"],["bento-hospedes-projeto-3.jpg"],["bento-hospedes-projeto-4.jpg","larga"]] }
+];
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let ambSel = 0;
+function desenhaAmb(){
+  $("abasAmb").innerHTML = ambientes.map((a,i)=>`<button type="button" aria-pressed="${i===ambSel}" data-i="${i}">${String(i+1).padStart(2,"0")} · ${esc(a.nome)}</button>`).join("");
+  const a = ambientes[ambSel];
+  $("ambNome").textContent = a.nome; $("ambTexto").textContent = a.texto;
+  const m = $("mosaico"); m.classList.remove("entra"); void m.offsetWidth; m.classList.add("entra");
+  m.innerHTML = a.fotos.map(([f,c],i)=>`<figure class="${c||""}" style="animation-delay:${i*60}ms" data-zoom-src="/img/${f}" data-zoom-legenda="${esc(a.nome)}" data-grupo="amb"><img src="/img/${f}" alt="${esc(a.nome)}, projeto" loading="lazy"></figure>`).join("");
+}
+$("abasAmb").addEventListener("click", e => { const b = e.target.closest("button"); if(!b) return; ambSel = +b.dataset.i; desenhaAmb(); });
+desenhaAmb();
+
+/* =====================================================================
+   MAIS PROJETOS (somente bairro e estado, sem nomes de clientes)
+   ===================================================================== */
+const projetos = [
+  { id:"bento", cat:"Residencial", sub:"Apartamentos", nome:"Apê de Bento", tipo:"Interiores", bairro:"Boa Viagem · PE", status:"Em obra", capa:"/img/bento-render-jantar.jpg", link:"#ape-de-bento" },
+  { id:"ped", cat:"Comercial", sub:"Consultórios", nome:"Consultório pediátrico no Edifício JAM Olinda", subtitulo:"Dra. Ana Celma e Dra. Magali Pedrosa", tipo:"Saúde · Interiores", bairro:"Casa Caiada · PE", status:"Finalizado", midia:"Fotos da obra pronta",
+    texto:"Consultório de 40 m² com recepção, espera, copa, lavabo e sala de atendimento. Montanhas pintadas, arcos na marcenaria e cores suaves para a criança se sentir em casa.",
+    fotos:[["ped-1-espera.jpg","Espera"],["ped-2-recepcao.jpg","Recepção"],["ped-3-consultorio.jpg","Sala de atendimento"],["ped-4-mesa-mural.jpg","Mesa e mural"],["ped-5-exame.jpg","Bancada de exame"],["ped-6-recreacao.jpg","Cantinho das crianças"],["ped-7-mural.jpg","Mural do sol e das montanhas"],["ped-8-luminarias.jpg","Luminárias do consultório"],["ped-9-janela.jpg","Mesa diante da janela"]],
+    ad:[{antes:"ped-antes-espera.jpg", posA:"8% 50%", depois:"ped-depois-espera-magda.jpg", titulo:"Espera", texto:"Magda no mesmo canto: sala vazia no levantamento, espera pronta com o mural de montanhas."},
+        {antes:"ped-antes-recreacao.jpg", posA:"50% 50%", depois:"ped-depois-recreacao.jpg", titulo:"Cantinho das crianças", texto:"Maísa de braços abertos no espaço vazio e, depois, no mesmo lugar, já com mural, banco e mesinha."}] },
+  { id:"sind", cat:"Comercial", sub:"Escritórios", nome:"Sede dos Peritos Criminais de Pernambuco", tipo:"Corporativo · Interiores", bairro:"Ilha do Leite · PE", status:"Finalizado", midia:"Fotos da obra pronta",
+    texto:"Recepção, sala de reunião, copa e espera pensadas para receber bem, com marcenaria sob medida e cor nos pontos certos.",
+    fotos:[["sind-1-recepcao-reuniao.jpg","Recepção e reunião"],["sind-3-espera.jpg","Espera"],["sind-2-copa.jpg","Copa"],["sind-4-estante.jpg","Estante"],["sind-5-detalhe.jpg","Detalhe"]] },
+  { id:"vald", cat:"Residencial", sub:"Apartamentos", nome:"Apartamento no Edifício Valdemar de Oliveira", tipo:"Reforma de apartamento antigo", bairro:"Boa Viagem · PE", status:"Finalizado", midia:"Fotos da obra pronta",
+    texto:"Reforma de um apartamento antigo: sala integrada, varanda com mesa de madeira e banheiros renovados.",
+    fotos:[["vald-3-jantar-estar.jpg","Jantar e estar"],["vald-1-varanda.jpg","Varanda"],["vald-2-jantar-tv.jpg","Jantar e TV"],["vald-4-banheiro.jpg","Banheiro"]] },
+  { id:"psi", cat:"Comercial", sub:"Consultórios", nome:"Consultório de psicanálise", tipo:"Reforma de sala comercial", bairro:"Santo Amaro · PE", status:"Finalizado", midia:"Imagens do projeto",
+    texto:"Sala de atendimento, copa e banheiro. Verdes, madeira e luz baixa para uma escuta tranquila.",
+    fotos:[["psi-1-atendimento.jpg","Sala de atendimento"],["psi-2-diva.jpg","Divã"],["psi-3-hall-escada.jpg","Hall e escada"],["psi-4-copa.jpg","Copa"],["psi-5-corredor.jpg","Corredor"]] },
+  { id:"sol", cat:"Residencial", sub:"Apartamentos", nome:"Apartamento no Edifício Solar di Cavalcanti", tipo:"Interiores de apartamento novo", bairro:"Madalena · PE", status:"Finalizado", midia:"Imagens do projeto",
+    texto:"Interiores completos de um apartamento novo: sala e jantar integrados, varanda, quarto e banheiros.",
+    fotos:[["sol-1-jantar-estar.jpg","Jantar e estar"],["sol-2-varanda.jpg","Varanda"],["sol-3-varanda-sala.jpg","Da varanda para a sala"],["sol-4-quarto.jpg","Quarto"],["sol-5-banheiro.jpg","Banheiro"]] },
+  { id:"mp", cat:"Residencial", sub:"Apartamentos", nome:"Apartamento de Magda", subtitulo:"A experiência de ser cliente neste projeto", tipo:"Reforma de apartamento antigo", bairro:"Santo Amaro · PE", status:"Projeto", midia:"Imagens do projeto",
+    texto:"A casa de Magda, sócia da Duo Colab. Desta vez, a arquiteta foi também a cliente: reforma de apartamento antigo com sala integrada, jantar e quarto, decidida dos dois lados da prancheta.",
+    fotos:[["mp-1-sala-jantar.jpg","Sala e jantar"],["mp-2-estar.jpg","Estar"],["mp-3-jantar.jpg","Jantar"],["mp-4-sala-cozinha.jpg","Sala e cozinha"],["mp-5-quarto.jpg","Quarto"]] }
+];
+const SUBS = { Residencial:["Casas","Apartamentos"], Comercial:["Empresas","Escritórios","Consultórios"] };
+let filtro = { cat:"Todos", sub:null };
+let projSel = projetos.findIndex(p=>!p.link);
+const visiveis = () => projetos.filter(p => (filtro.cat==="Todos" || p.cat===filtro.cat) && (!filtro.sub || p.sub===filtro.sub));
+function desenhaFiltros(){
+  const n = c => projetos.filter(p=>c==="Todos"||p.cat===c).length;
+  $("f1").innerHTML = ["Todos","Residencial","Comercial"].map(c=>`<button type="button" data-cat="${c}" aria-pressed="${filtro.cat===c}">${c}<sup>${n(c)}</sup></button>`).join("");
+  $("f2").innerHTML = filtro.cat==="Todos" ? "" : SUBS[filtro.cat].map(sb=>{ const k = projetos.filter(p=>p.cat===filtro.cat&&p.sub===sb).length;
+    return `<button type="button" data-sub="${sb}" aria-pressed="${filtro.sub===sb}" ${k?"":"disabled title=\"Em breve\""}>${sb}<sup>${k||"em breve"}</sup></button>`; }).join("");
+}
+function desenhaProj(rola){
+  desenhaFiltros();
+  const vis = visiveis();
+  if(!vis.includes(projetos[projSel]) || projetos[projSel].link){ const pr = vis.find(p=>!p.link); if(pr) projSel = projetos.indexOf(pr); }
+  $("capas").innerHTML = vis.map(p=>{ const i = projetos.indexOf(p); const capa = p.capa || "/img/proj/"+p.fotos[0][0];
+    return `<button type="button" class="capa" aria-pressed="${i===projSel && !p.link}" data-i="${i}"><img src="${capa}" alt="" loading="lazy"><span class="selo rot">${esc(p.status)}</span><span><small class="cat">${esc(p.cat)} · ${esc(p.sub)}</small><b>${esc(p.nome)}</b>${p.subtitulo?`<small style="text-transform:none;letter-spacing:0;font-size:12.5px;font-family:var(--serif);font-style:italic">${esc(p.subtitulo)}</small>`:""}<small>${esc(p.bairro)}</small></span></button>`; }).join("");
+  const p = projetos[projSel]; const temDet = vis.includes(p) && !p.link;
+  ["projInfo","projMos","projNota"].forEach(id=>$(id).hidden = !temDet);
+  if(!temDet){ $("projAD").hidden = true; return; }
+  $("projTipo").textContent = p.cat+" · "+p.sub; $("projNome").textContent = p.nome; $("projSub").hidden = !p.subtitulo; $("projSub").textContent = p.subtitulo||""; $("projTexto").textContent = p.texto;
+  $("projDl").innerHTML = `<dt>Tipo</dt><dd>${esc(p.tipo)}</dd><dt>Local</dt><dd>${esc(p.bairro)}</dd><dt>Status</dt><dd>${esc(p.status)}</dd><dt>Imagens</dt><dd>${esc(p.midia)}</dd>`;
+  const m = $("projMos"); m.classList.remove("entra"); void m.offsetWidth; m.classList.add("entra");
+  m.innerHTML = p.fotos.map(([f,l],i)=>`<figure class="${p.fotos.length===9?["larga","","","terco","terco","terco","terco","terco","terco"][i]:(i===0?"larga":"")}" style="animation-delay:${i*60}ms" data-zoom-src="/img/proj/${f}" data-zoom-legenda="${esc(p.nome+" · "+l)}" data-grupo="proj"><img src="/img/proj/${f}" alt="${esc(p.nome)}: ${esc(l)}" loading="lazy"></figure>`).join("");
+  const ad = $("projAD");
+  if(p.ad){ ad.hidden = false;
+    ad.innerHTML = `<span class="rot olho">Antes e depois</span>` + p.ad.map(x=>`<div class="ad-par"><div class="ad-txt"><h4>${esc(x.titulo)}</h4><p class="nota" style="margin:0">${esc(x.texto)}</p></div><figure data-zoom-src="/img/proj/${x.antes}" data-zoom-legenda="${esc(x.titulo)} · antes" data-grupo="ad"><img src="/img/proj/${x.antes}" alt="${esc(x.titulo)}, antes" loading="lazy" style="object-position:${x.posA}"><span class="et rot">Antes</span></figure><figure data-zoom-src="/img/proj/${x.depois}" data-zoom-legenda="${esc(x.titulo)} · depois" data-grupo="ad"><img src="/img/proj/${x.depois}" alt="${esc(x.titulo)}, depois" loading="lazy"><span class="et rot">Depois</span></figure></div>`).join("");
+  } else { ad.hidden = true; ad.innerHTML = ""; }
+  $("projNota").textContent = p.midia === "Fotos da obra pronta" ? "Fotos do espaço pronto e em uso." : "Imagens do projeto (renders).";
+  if(rola) $("projInfo").scrollIntoView({behavior:"smooth", block:"start"});
+}
+$("capas").addEventListener("click", e => { const b = e.target.closest(".capa"); if(!b) return; const p = projetos[+b.dataset.i];
+  if(p.link){ document.querySelector(p.link).scrollIntoView({behavior:"smooth"}); return; }
+  projSel = +b.dataset.i; desenhaProj(true); });
+$("filtros").addEventListener("click", e => { const b = e.target.closest("button"); if(!b || b.disabled) return;
+  if(b.dataset.cat){ filtro = { cat:b.dataset.cat, sub:null }; }
+  else { filtro.sub = filtro.sub===b.dataset.sub ? null : b.dataset.sub; }
+  const h = filtro.cat==="Todos" ? "#projetos" : "#projetos-"+filtro.cat.toLowerCase(); if(location.hash!==h) history.replaceState(null,"",h);
+  desenhaProj(false); });
+function rotaProjetos(){ const m = location.hash.match(/^#projetos(?:-(residencial|comercial))?$/); if(!m) return;
+  filtro = { cat: m[1] ? m[1][0].toUpperCase()+m[1].slice(1) : "Todos", sub:null }; desenhaProj(false);
+  document.getElementById("projetos").scrollIntoView({behavior:"smooth"}); }
+addEventListener("hashchange", rotaProjetos);
+desenhaProj(false); if(/^#projetos-/.test(location.hash)) rotaProjetos();
+
+/* ---------- Lightbox com navegação ---------- */
+const zoom = $("zoom"); let zLista = [], zI = 0;
+function zMostra(){ const [s,l] = zLista[zI]; zoom.querySelector("img").src = s; zoom.querySelector(".zl").textContent = l + (zLista.length>1 ? `  ·  ${zI+1}/${zLista.length}` : ""); zoom.querySelectorAll(".zb").forEach(b=>b.hidden = zLista.length < 2); }
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-zoom-src]"); if(!t || false) return;
+  const irmaos = t.dataset.grupo ? [...document.querySelectorAll(`[data-grupo="${t.dataset.grupo}"]`)] : [t];
+  zLista = irmaos.map(x=>[x.dataset.zoomSrc, x.dataset.zoomLegenda||""]); zI = irmaos.indexOf(t);
+  zMostra(); zoom.showModal();
+});
+zoom.querySelector(".ant").onclick = e => { e.stopPropagation(); zI = (zI-1+zLista.length)%zLista.length; zMostra(); };
+zoom.querySelector(".prox").onclick = e => { e.stopPropagation(); zI = (zI+1)%zLista.length; zMostra(); };
+zoom.addEventListener("click", e => { if(!e.target.closest(".zb")) zoom.close(); });
+zoom.addEventListener("keydown", e => { if(e.key==="ArrowLeft") zoom.querySelector(".ant").click(); if(e.key==="ArrowRight") zoom.querySelector(".prox").click(); });
+
+/* ---------- Topo ---------- */
+const topo = $("topo");
+const solido = () => topo.classList.toggle("solido", scrollY > innerHeight*0.75);
+addEventListener("scroll", solido, {passive:true}); solido();
+$("menuBtn").onclick = () => { const ab = $("menu").classList.toggle("aberto"); $("menuBtn").setAttribute("aria-expanded", ab); if(ab) topo.classList.add("solido"); else solido(); };
+$("menu").addEventListener("click", e => { if(e.target.closest("a")){ $("menu").classList.remove("aberto"); $("menuBtn").setAttribute("aria-expanded", false); } });
+
+/* =====================================================================
+   SERVIÇOS (todos os serviços mapeados no levantamento)
+   ===================================================================== */
+const servicos = [
+  { t:"Interiores residenciais", r:"Apartamentos recém-entregues, pequenos, antigos e alugados, e casas inteiras.",
+    d:["Briefing e levantamento","Estudo e perspectivas 3D","Projeto técnico e detalhamento de marcenaria","Iluminação, revestimentos e cores","Curadoria de móveis e indicação de fornecedores"] },
+  { t:"Construção", r:"Casas do zero, do projeto legal ao executivo e aos interiores, em pacotes que se adaptam.",
+    d:["Projeto legal para aprovação","Projeto executivo","Interiores integrados à construção","Casas de praia e de campo"] },
+  { t:"Reformas", r:"Grandes reformas de apartamentos antigos e de casas, com o que fica e o que muda bem resolvido.",
+    d:["Levantamento do existente","Demolir e construir com critério","Compatibilização com a obra","Aproveitamento de móveis existentes"] },
+  { t:"Interiores comerciais", r:"Escritórios, lojas, clínicas, escolas, espaços de eventos e de alimentação.",
+    d:["Layout e fluxo de atendimento","Identidade da marca no espaço","Projeto técnico para execução","Legalização no mesmo pacote"] },
+  { t:"Legalização", r:"Prefeitura, Vigilância Sanitária e Corpo de Bombeiros, com o projeto e a burocracia no mesmo lugar.",
+    d:["Aprovação na Prefeitura","Licença da Vigilância Sanitária","Projeto de prevenção e combate a incêndio (PCI)","Acompanhamento dos processos"] },
+  { t:"Projetos isolados", r:"Só a etapa que você precisa, para somar com a sua equipe ou com a sua obra.",
+    d:["Levantamento arquitetônico","Projeto legal","Projeto executivo","Modelagem e imagens 3D"] },
+  { t:"Consultoria de interiores", r:"Orientação pontual, presencial ou à distância, inclusive para quem mora longe de Recife.",
+    d:["Escolha de cores e materiais","Disposição de móveis","Lista de compras com fornecedores","Encontros online"] },
+  { t:"Acompanhamento de obra", r:"Visitas técnicas para a obra seguir o projeto, do início à entrega da chave.",
+    d:["Visitas periódicas","Conferência de medidas e acabamentos","Diálogo direto com fornecedores","Conferência final antes da mudança"] },
+  { t:"RRT", r:"Registro de Responsabilidade Técnica emitido pelas arquitetas responsáveis pelo projeto.",
+    d:["Emissão de RRT de projeto","Emissão de RRT de execução / acompanhamento"] }
+];
+$("servLista").innerHTML = servicos.map((s,i)=>`<li>
+  <button type="button" aria-expanded="false"><span class="n">${String(i+1).padStart(2,"0")}</span><h3>${esc(s.t)}</h3><p class="resumo">${esc(s.r)}</p><span class="mais" aria-hidden="true">+</span></button>
+  <div class="serv-det"><div><ul>${s.d.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div></div></li>`).join("");
+$("servLista").addEventListener("click", e => { const b = e.target.closest("button"); if(!b) return; const li = b.parentElement; const ab = li.classList.toggle("aberto"); b.setAttribute("aria-expanded", ab); });
+
+/* =====================================================================
+   PROPOSTA · formulário em passos → mensagem pronta para o WhatsApp
+   ===================================================================== */
+const ZAP = "5581996252833";
+const F = { servico:[], imovel:"", prazo:"" };
+let passo = 0;
+document.querySelectorAll("#formProp .opcoes").forEach(g => g.addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b) return;
+  const campo = g.dataset.campo, multi = g.dataset.multi;
+  if(multi){ const on = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", on);
+    F[campo] = [...g.querySelectorAll('[aria-pressed="true"]')].map(x=>x.textContent); }
+  else { g.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed", x===b)); F[campo] = b.textContent; }
+  $("erroForm").textContent = "";
+}));
+document.querySelectorAll("#formProp .opcoes button").forEach(b=>b.setAttribute("aria-pressed","false"));
+function msgProposta(){
+  const v = id => $(id).value.trim();
+  const L = [`Olá, Duo Colab! Vim pelo site e quero uma proposta.`, ``,
+    `• Nome: ${v("fNome")}`, `• WhatsApp: ${v("fZap")}`,
+    `• Serviço: ${F.servico.join(", ")}`, `• Imóvel: ${F.imovel || "não informado"}`];
+  if(v("fBairro")) L.push(`• Local: ${v("fBairro")}`);
+  if(v("fArea")) L.push(`• Área: ${v("fArea")}`);
+  L.push(`• Momento: ${F.prazo || "não informado"}`);
+  if(v("fComo")) L.push(`• Conheci a Duo por: ${v("fComo")}`);
+  if(v("fConta")) L.push(``, `Sobre o projeto: ${v("fConta")}`);
+  return L.join("\n");
+}
+function vaiPara(n){
+  passo = n;
+  document.querySelectorAll("#formProp .passo").forEach(p=>p.classList.toggle("on", +p.dataset.p===n));
+  document.querySelectorAll("#formProp .passos i").forEach((i,k)=>i.classList.toggle("on", k<=Math.min(n,3)));
+  $("voltar").style.visibility = n>0 && n<4 ? "visible" : "hidden";
+  $("navForm").style.display = n===4 ? "none" : "";
+  $("avancar").innerHTML = n===3 ? "Montar mensagem →" : "Continuar →";
+  if(n===4){ const m = msgProposta(); $("resumoEnv").textContent = m; $("linkZap").href = `https://wa.me/${ZAP}?text=${encodeURIComponent(m)}`; }
+}
+$("formProp").addEventListener("submit", e => {
+  e.preventDefault();
+  const erro = t => { $("erroForm").textContent = t; };
+  if(passo===0 && !F.servico.length) return erro("Escolha pelo menos uma opção.");
+  if(passo===3){
+    if(!$("fNome").value.trim()) return erro("Como podemos te chamar?");
+    if($("fZap").value.replace(/\D/g,"").length < 10) return erro("Confira o número do WhatsApp, com DDD.");
+  }
+  erro(""); vaiPara(passo+1);
+  document.getElementById("proposta").scrollIntoView({behavior:"smooth", block:"start"});
+});
+$("voltar").onclick = () => vaiPara(Math.max(0, passo-1));
+$("copiaMsg").onclick = async () => { try{ await navigator.clipboard.writeText(msgProposta()); $("copiaMsg").textContent = "Copiada ✓"; }catch(_){ $("copiaMsg").textContent = "Selecione o texto acima"; } };
+
+/* Mapa: carrega o Google Maps no site publicado; dentro da prévia do Claude, mostra o cartão */
+(() => { const box = document.getElementById("mapaBox"); if(!box) return;
+  let framed = true; try { framed = window.self !== window.top; } catch(_) {}
+  if(framed) return;
+  const f = document.createElement("iframe"); f.title = "Mapa do escritório da Duo Colab"; f.src = box.dataset.src;
+  f.loading = "lazy"; f.referrerPolicy = "no-referrer-when-downgrade"; f.allowFullscreen = true; box.appendChild(f); })();
+</script>
+</body>
+</html>
