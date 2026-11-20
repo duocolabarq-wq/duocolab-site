@@ -42,3 +42,6 @@ next-env.d.ts
 
 # dados reais de clientes (não versionar)
 supabase/seed-*.sql
+
+# manifestos de importação (têm dados de clientes)
+manifesto*.json

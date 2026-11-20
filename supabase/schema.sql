@@ -179,3 +179,78 @@ insert into storage.buckets (id, name, public) values ('projetos', 'projetos', t
 drop policy if exists equipe_sobe on storage.objects;
 create policy equipe_sobe on storage.objects for all to authenticated
   using (bucket_id = 'projetos' and sou_equipe()) with check (bucket_id = 'projetos' and sou_equipe());
+
+-- =========================================================
+-- Documentos do projeto (guias, andamento, cadernos, conferências, painel interno)
+-- Cada documento é uma página HTML com seus arquivos (imagens, scripts), guardada
+-- no bucket privado "documentos" em <projeto_id>/<documento_id>/...
+-- O portal mostra o documento dentro de um quadro isolado (iframe sandbox).
+-- =========================================================
+create table if not exists documentos_projeto (
+  id uuid primary key default gen_random_uuid(),
+  projeto_id uuid not null references projetos on delete cascade,
+  tipo text not null check (tipo in ('andamento','guia','etapas','perspectivas','marcenaria','conferencia','painel')),
+  titulo text not null,
+  subtitulo text default '',
+  versao text default '',
+  data date,
+  so_equipe boolean not null default false,   -- true = só a equipe vê (ex.: painel interno)
+  ordem int not null default 0,
+  origem text default '',                     -- de onde veio (ex.: link do artefato no Claude), só para a equipe
+  criado_em timestamptz default now(),
+  atualizado_em timestamptz default now()
+);
+create index if not exists documentos_projeto_projeto on documentos_projeto (projeto_id);
+
+-- Painel interno é sempre só da equipe.
+create or replace function painel_so_equipe() returns trigger language plpgsql as $$
+begin
+  if new.tipo = 'painel' then new.so_equipe := true; end if;
+  new.atualizado_em := now();
+  return new;
+end $$;
+drop trigger if exists painel_so_equipe on documentos_projeto;
+create trigger painel_so_equipe before insert or update on documentos_projeto
+  for each row execute function painel_so_equipe();
+
+create or replace function vejo_documento(d uuid) returns boolean language sql stable security definer set search_path = public as
+$$ select exists (select 1 from documentos_projeto x where x.id = d and vejo_projeto(x.projeto_id) and (not x.so_equipe or sou_equipe())) $$;
+
+alter table documentos_projeto enable row level security;
+drop policy if exists ler on documentos_projeto;
+drop policy if exists equipe_edita on documentos_projeto;
+create policy ler on documentos_projeto for select to authenticated
+  using (vejo_projeto(projeto_id) and (not so_equipe or sou_equipe()));
+create policy equipe_edita on documentos_projeto for all to authenticated
+  using (sou_equipe()) with check (sou_equipe());
+
+-- O que as pessoas marcam dentro de um documento (tarefas do painel, respostas do cliente,
+-- registros de visita). Substitui o armazenamento que os documentos tinham no Claude.
+create table if not exists documento_dados (
+  documento_id uuid not null references documentos_projeto on delete cascade,
+  colecao text not null,
+  chave text not null,
+  dados jsonb not null default '{}'::jsonb,
+  autor uuid default auth.uid(),
+  autor_nome text default '',
+  atualizado_em timestamptz default now(),
+  primary key (documento_id, colecao, chave)
+);
+alter table documento_dados enable row level security;
+drop policy if exists ler on documento_dados;
+drop policy if exists equipe_edita on documento_dados;
+drop policy if exists cliente_proprio on documento_dados;
+create policy ler on documento_dados for select to authenticated using (vejo_documento(documento_id));
+create policy equipe_edita on documento_dados for all to authenticated
+  using (sou_equipe() and vejo_documento(documento_id)) with check (sou_equipe() and vejo_documento(documento_id));
+-- O cliente só grava registros dele mesmo: a chave termina com "_<id do usuário>".
+create policy cliente_proprio on documento_dados for all to authenticated
+  using (vejo_documento(documento_id) and chave like '%\_' || auth.uid()::text)
+  with check (vejo_documento(documento_id) and chave like '%\_' || auth.uid()::text and autor = auth.uid());
+
+-- Bucket privado dos documentos: a equipe envia; a leitura passa pelo servidor do site.
+insert into storage.buckets (id, name, public) values ('documentos', 'documentos', false)
+  on conflict (id) do nothing;
+drop policy if exists equipe_documentos on storage.objects;
+create policy equipe_documentos on storage.objects for all to authenticated
+  using (bucket_id = 'documentos' and sou_equipe()) with check (bucket_id = 'documentos' and sou_equipe());
