@@ -99,3 +99,23 @@ export async function apagarProjeto(id: string) {
   await sb.from("projetos").delete().eq("id", id);
   redirect("/admin");
 }
+
+export async function salvarEquipe(pessoas: { email: string; nome: string }[]): Promise<Resultado> {
+  const s = await sessao();
+  if (!s.user || !s.equipe) redirect("/portal");
+  const lista = pessoas
+    .map((p) => ({ email: p.email.trim().toLowerCase(), nome: p.nome.trim() || p.email.trim() }))
+    .filter((p) => /^\S+@\S+\.\S+$/.test(p.email));
+  if (!lista.some((p) => p.email === s.user!.email?.toLowerCase()))
+    return { erro: "Você não pode remover o seu próprio e-mail da equipe." };
+  const { supabaseAdmin } = await import("@/lib/supabase/admin");
+  const adm = supabaseAdmin();
+  const { data: atuais } = await adm.from("equipe").select("email");
+  const manter = new Set(lista.map((p) => p.email));
+  const sair = (atuais ?? []).map((a) => a.email).filter((e) => !manter.has(e.toLowerCase()));
+  if (sair.length) await adm.from("equipe").delete().in("email", sair);
+  const { error } = await adm.from("equipe").upsert(lista);
+  if (error) return { erro: error.message };
+  revalidatePath("/admin/equipe");
+  return { ok: true, quando: Date.now() };
+}

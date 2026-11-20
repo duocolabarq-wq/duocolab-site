@@ -25,6 +25,7 @@ export default async function Admin({ searchParams }: PageProps<"/admin">) {
   return (
     <>
       <BarraPortal titulo="Painel da equipe">
+        <Link className="rot" href="/admin/equipe">Equipe</Link>
         <form action={sair}><button className="rot" type="submit">Sair</button></form>
       </BarraPortal>
       <main className="ac-wrap">
