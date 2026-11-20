@@ -119,3 +119,9 @@ export async function salvarEquipe(pessoas: { email: string; nome: string }[]): 
   revalidatePath("/admin/equipe");
   return { ok: true, quando: Date.now() };
 }
+
+/** Depois de a equipe enviar ou mudar documentos do projeto (feito direto no navegador). */
+export async function revalidarDocs(id: string) {
+  const sb = await equipeOuSai();
+  await tocar(sb, id);
+}

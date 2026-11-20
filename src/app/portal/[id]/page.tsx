@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { BarraPortal } from "@/components/BarraPortal";
 import { carregarProjeto, dataBR } from "@/lib/dados";
 import { sessao } from "@/lib/supabase/server";
+import { TIPOS_DOC, nomeTipo } from "@/lib/tipos";
 import { sair } from "../acoes";
 import { Compras, Decisoes, Galeria, LinhaDoTempo } from "./Interativo";
 import "../portal.css";
@@ -34,7 +35,7 @@ export default async function PaginaProjeto({ params }: PageProps<"/portal/[id]"
         <div className="ola">
           <div>
             <h2>Olá, {P.cliente}</h2>
-            <p>Este é o portal do seu projeto. Aqui você acompanha etapas, documentos, decisões e compras num só lugar.</p>
+            <p>Este é o portal do seu projeto. Aqui você acompanha etapas, guias, cadernos, decisões e compras num só lugar.</p>
           </div>
         </div>
 
@@ -53,6 +54,28 @@ export default async function PaginaProjeto({ params }: PageProps<"/portal/[id]"
             </div>
           </div>
         </section>
+
+        {P.docs.length > 0 && (
+          <section className="cartao" id="documentos">
+            <div className="cab-c">
+              <h3>Documentos do projeto</h3>
+              <span className="rot">{P.docs.length} {P.docs.length === 1 ? "documento" : "documentos"}</span>
+            </div>
+            <div className="docs-grid">
+              {P.docs.map((d) => (
+                <Link key={d.id} className={`doc-card t-${d.tipo}`} href={`/portal/${P.id}/documentos/${d.id}`}>
+                  <span className="rot">{nomeTipo(d.tipo)}{d.so_equipe && <i className="so-eq">Só equipe</i>}</span>
+                  <b>{d.subtitulo || nomeTipo(d.tipo)}</b>
+                  <small>{TIPOS_DOC.find((t) => t.k === d.tipo)?.desc}</small>
+                  <span className="ir">
+                    <span>{[d.versao, dataBR(d.data)].filter(Boolean).join(" · ")}</span>
+                    <span>Abrir →</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="cartao">
           <div className="cab-c"><h3>Linha do tempo</h3></div>
@@ -90,8 +113,8 @@ export default async function PaginaProjeto({ params }: PageProps<"/portal/[id]"
             <p style={{ fontSize: 13.5 }}>{P.vistorias_texto || "As visitas à obra aparecem aqui quando forem contratadas."}</p>
           </section>
           <section className="cartao">
-            <div className="cab-c"><h3>Documentos</h3></div>
-            {P.documentos.length === 0 && <p className="vazio">Nenhum documento entregue ainda.</p>}
+            <div className="cab-c"><h3>Arquivos entregues</h3></div>
+            {P.documentos.length === 0 && <p className="vazio">Nenhum arquivo entregue ainda.</p>}
             {P.documentos.map((d, i) => (
               <div key={i} className="linha-l">
                 <div>{d.url ? <a href={d.url} target="_blank" rel="noopener" style={{ borderBottom: "1px solid var(--linha)" }}>{d.titulo}</a> : d.titulo}</div>

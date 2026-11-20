@@ -18,9 +18,30 @@ export type Compra = { id?: string; categoria: string; item: string; fornecedor:
 export type Ambiente = { id?: string; ordem: number; titulo: string; imagem_url: string };
 export type Pessoa = { id?: string; ordem: number; nome: string; papel: string };
 
+export type TipoDoc = "andamento" | "guia" | "etapas" | "perspectivas" | "marcenaria" | "conferencia" | "painel";
+export type DocProjeto = {
+  id: string; projeto_id: string; tipo: TipoDoc; titulo: string; subtitulo: string; versao: string;
+  data: string | null; so_equipe: boolean; ordem: number; origem: string; atualizado_em: string;
+};
+
+/** Ordem e nomes dos tipos de documento, como aparecem para o cliente. */
+export const TIPOS_DOC: { k: TipoDoc; nome: string; desc: string }[] = [
+  { k: "andamento", nome: "Andamento", desc: "Onde o projeto e a obra estão, o que foi decidido e o que vem a seguir." },
+  { k: "guia", nome: "Guia do projeto", desc: "O projeto explicado ambiente por ambiente, com as orientações de obra." },
+  { k: "etapas", nome: "Etapas da obra", desc: "A sequência da obra, etapa por etapa." },
+  { k: "perspectivas", nome: "Perspectivas", desc: "As imagens do projeto, o conceito de cada ambiente e o moodboard." },
+  { k: "marcenaria", nome: "Marcenaria", desc: "O caderno técnico da marcenaria, móvel por móvel." },
+  { k: "conferencia", nome: "Conferência", desc: "Conferência de itens do projeto com os pedidos e a obra." },
+  { k: "painel", nome: "Painel interno", desc: "Uso da equipe. O cliente não vê." },
+];
+export const nomeTipo = (t: TipoDoc) => TIPOS_DOC.find((x) => x.k === t)?.nome ?? t;
+export const ordenarDocs = (l: DocProjeto[]) =>
+  [...l].sort((a, b) => TIPOS_DOC.findIndex((x) => x.k === a.tipo) - TIPOS_DOC.findIndex((x) => x.k === b.tipo) || a.ordem - b.ordem);
+
 export type ProjetoCompleto = Projeto & {
   etapas: Etapa[]; marcos: Marco[]; decisoes: Decisao[]; documentos: Documento[]; reunioes: Reuniao[];
   links: LinkP[]; compras: Compra[]; ambientes: Ambiente[]; pessoas: Pessoa[]; acessos: string[];
+  docs: DocProjeto[];
 };
 
 export const TAG_TXT: Record<St, string> = { ok: "Concluído", and: "Em andamento", pend: "Pendente" };

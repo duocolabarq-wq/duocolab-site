@@ -5,6 +5,7 @@ import { BarraPortal } from "@/components/BarraPortal";
 import { carregarProjeto } from "@/lib/dados";
 import { sessao } from "@/lib/supabase/server";
 import { ApagarProjeto, EditorAcessos, EditorDados, EditorDecisoes, EditorLista } from "./Editores";
+import { EditorDocumentos } from "./EditorDocumentos";
 import "../../portal/portal.css";
 import "../admin.css";
 
@@ -16,7 +17,7 @@ export default async function EditarProjeto({ params }: PageProps<"/admin/[id]">
   if (!s.user || !s.equipe) redirect("/portal");
   const P = await carregarProjeto(s.sb, id);
   if (!P) notFound();
-  const { etapas, marcos, decisoes, documentos, reunioes, links, compras, ambientes, pessoas, acessos, ...dados } = P;
+  const { etapas, marcos, decisoes, documentos, reunioes, links, compras, ambientes, pessoas, acessos, docs, ...dados } = P;
   const base = { projetoId: P.id };
 
   return (
@@ -30,6 +31,7 @@ export default async function EditarProjeto({ params }: PageProps<"/admin/[id]">
 
         <EditorDados projetoId={P.id} iniciais={dados as unknown as Record<string, string | number | boolean>} />
         <EditorAcessos projetoId={P.id} iniciais={acessos} />
+        <EditorDocumentos projetoId={P.id} iniciais={docs} />
         <EditorDecisoes projetoId={P.id} iniciais={decisoes} />
 
         <EditorLista {...base} tabela="etapas" titulo="Etapas" iniciais={etapas}
@@ -42,7 +44,7 @@ export default async function EditarProjeto({ params }: PageProps<"/admin/[id]">
           campos={[{ k: "valor", rotulo: "Data ou valor", dica: "03/03" }, { k: "rotulo", rotulo: "Descrição", dica: "Contrato assinado" },
             { k: "proximo", rotulo: "É o próximo marco (destaque)", tipo: "check" }]} />
 
-        <EditorLista {...base} tabela="documentos" titulo="Documentos" iniciais={documentos}
+        <EditorLista {...base} tabela="documentos" titulo="Arquivos entregues" iniciais={documentos}
           novo={{ titulo: "", data: "", url: "" }}
           campos={[{ k: "titulo", rotulo: "Documento", dica: "Caderno Técnico · R07" }, { k: "data", rotulo: "Data", tipo: "data" },
             { k: "url", rotulo: "Link (opcional)", dica: "https://drive.google.com/..." }]} />

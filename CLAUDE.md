@@ -11,6 +11,14 @@ Projeto do escritório Duo Colab Arquitetura (Recife). Comunicação com a equip
   - Tabelas: `projetos`, `acessos`, `equipe`, `etapas`, `marcos`, `decisoes`, `documentos`, `reunioes`, `links`, `compras`, `ambientes`, `pessoas_projeto`.
   - O cliente só altera decisões pela função `responder_decisao`. A equipe (`sou_equipe()`) edita tudo.
   - Imagens no bucket público `projetos` do Supabase Storage.
+- **Documentos do projeto** (guias, andamento, etapas da obra, perspectivas, marcenaria, conferências, painel interno):
+  páginas HTML (feitas como artefatos no Claude) guardadas no bucket **privado** `documentos` em `<projeto_id>/<documento_id>/`,
+  registradas na tabela `documentos_projeto`. O painel interno (`tipo = 'painel'`) é sempre só da equipe.
+  - O cliente abre em `/portal/[id]/documentos/[docId]`: barra de navegação entre os documentos + o documento num iframe sandbox.
+  - O iframe carrega `/doc/[chave]/[docId]/...` (`src/app/doc/`), com chave assinada de 8 h (`src/lib/token-doc.ts`).
+  - `src/lib/docs-runtime.ts` recria `claude.use("db"/"user")` e o localStorage dos artefatos; as marcações vão para `documento_dados`.
+  - A equipe publica pelo `/admin/[id]` (escolhe a pasta com `index.html`) ou em lote com `scripts/importar-documentos.mjs`.
+  - Ao gerar um artefato novo para o cliente, mudanças de visual/navegação são feitas no site, não no artefato.
 - Helpers: `src/lib/supabase/{server,client,admin,env}.ts`, tipos em `src/lib/tipos.ts`, carregamento em `src/lib/dados.ts`.
 - Next.js 16 (App Router, `src/proxy.ts` no lugar do middleware), React 19, sem Tailwind: estilos em `src/app/globals.css`, `src/app/portal/portal.css` e `src/app/admin/admin.css`.
 
